@@ -188,6 +188,10 @@ export default function ProviderLimits() {
             isSilentRefreshing={isSilentRefreshing}
             error={errors[conn.id]}
             isInactive={conn.isActive === false}
+            onEdit={() => {
+              setSelectedConnection(conn);
+              setShowEditModal(true);
+            }}
           />
         ))}
       </div>

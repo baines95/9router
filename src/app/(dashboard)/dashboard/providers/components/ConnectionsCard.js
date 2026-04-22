@@ -99,14 +99,14 @@ function ConnectionRow({ connection, proxyPools, isOAuth, isFirst, isLast, onMov
 
   const effectiveStatus = connection.testStatus === "unavailable" && !isCooldown ? "active" : connection.testStatus;
   const getStatusBadge = () => {
-    if (connection.isActive === false) return <Badge variant="secondary" className="h-4 text-[8px] font-black uppercase opacity-50">DISABLED</Badge>;
-    if (effectiveStatus === "active" || effectiveStatus === "success") return <Badge className="h-4 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-600 border-none">ACTIVE</Badge>;
-    if (effectiveStatus === "error" || effectiveStatus === "expired" || effectiveStatus === "unavailable") return <Badge variant="destructive" className="h-4 text-[8px] font-black uppercase border-none">FAIL</Badge>;
-    return <Badge variant="outline" className="h-4 text-[8px] font-black uppercase border-border">{effectiveStatus || "UNKNOWN"}</Badge>;
+    if (connection.isActive === false) return <Badge variant="secondary" className="h-4 text-[10px] font-medium capitalize opacity-50">Đã tắt</Badge>;
+    if (effectiveStatus === "active" || effectiveStatus === "success") return <Badge className="h-4 text-[10px] font-medium capitalize bg-emerald-500/10 text-emerald-600 border-none">Hoạt động</Badge>;
+    if (effectiveStatus === "error" || effectiveStatus === "expired" || effectiveStatus === "unavailable") return <Badge variant="destructive" className="h-4 text-[10px] font-medium capitalize border-none">Lỗi</Badge>;
+    return <Badge variant="outline" className="h-4 text-[10px] font-medium capitalize border-border/50">{effectiveStatus || "Không rõ"}</Badge>;
   };
 
   return (
-    <div className={cn("p-4 flex items-center justify-between hover:bg-muted/30 transition-all group border-b border-border last:border-0", connection.isActive === false && "opacity-60 grayscale")}>
+    <div className={cn("p-3 flex items-center justify-between hover:bg-muted/10 transition-colors group border-b border-border/40 last:border-0", connection.isActive === false && "opacity-60 grayscale")}>
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <div className="flex flex-col gap-0.5 opacity-30 group-hover:opacity-100 transition-opacity">
            <Button variant="ghost" size="icon" className="size-5 rounded-md hover:bg-muted" onClick={onMoveUp} disabled={isFirst}><ChevronUp className="size-3" /></Button>
@@ -281,9 +281,9 @@ export default function ConnectionsCard({ providerId, isOAuth }) {
         </CardHeader>
         <CardContent className="p-0">
            {loading ? <div className="p-10 text-center opacity-20"><RefreshCw className="size-6 animate-spin mx-auto" /></div> : connections.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center opacity-30 text-center gap-3">
+              <div className="py-12 flex flex-col items-center justify-center opacity-40 text-center gap-3">
                  <ShieldCheck className="size-10" />
-                 <p className="text-[10px] font-bold uppercase tracking-widest">No active keys</p>
+                 <p className="text-sm font-medium">Chưa có kết nối nào</p>
               </div>
            ) : (
              <div className="flex flex-col">
@@ -301,8 +301,8 @@ export default function ConnectionsCard({ providerId, isOAuth }) {
              </div>
            )}
         </CardContent>
-        <CardFooter className="p-3 bg-muted/10 border-t justify-end">
-           <Button size="sm" className="h-7 text-[10px] font-bold uppercase px-6" onClick={() => setShowAddModal(true)}><Plus className="size-3 mr-2" /> Connect Key</Button>
+        <CardFooter className="p-3 bg-muted/10 border-t border-border/50 justify-end">
+           <Button size="sm" variant="outline" className="h-8 text-xs font-medium px-4 bg-background" onClick={() => setShowAddModal(true)}><Plus className="size-3 mr-2" /> Thêm kết nối</Button>
         </CardFooter>
       </Card>
 

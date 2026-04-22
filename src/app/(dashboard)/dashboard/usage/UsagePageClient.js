@@ -227,29 +227,29 @@ function UsageDashboard() {
     <div className="space-y-8">
       {/* 1. KPI Pulse Section */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPIItem label="Total Requests" value={fmt(stats?.requests)} icon={Zap} trend="+12.5%" />
-        <KPIItem label="Est. Cost" value={`$${(stats?.cost || 0).toFixed(4)}`} icon={Database} trend="-2.1%" />
-        <KPIItem label="Token Volume" value={fmt((stats?.promptTokens || 0) + (stats?.completionTokens || 0))} icon={Activity} />
-        <KPIItem label="Active Streams" value={stats?.activeRequests?.length || 0} icon={Network} />
+        <KPIItem label="Tổng số yêu cầu" value={fmt(stats?.totalRequests)} icon={Zap} trend="" />
+        <KPIItem label="Chi phí ước tính" value={`$${(stats?.totalCost || 0).toFixed(4)}`} icon={Database} trend="" />
+        <KPIItem label="Lượng Token" value={fmt((stats?.totalPromptTokens || 0) + (stats?.totalCompletionTokens || 0))} icon={Activity} />
+        <KPIItem label="Luồng trực tiếp" value={stats?.activeRequests?.length || 0} icon={Network} />
       </div>
 
       {/* 2. Live Operations Grid */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Topology Card */}
-        <Card className="lg:col-span-8 shadow-none border-border p-0 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-border bg-muted/20">
+        <Card className="lg:col-span-8 shadow-sm border-border/50 p-0 overflow-hidden bg-background/50">
+          <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-border/40 bg-muted/10">
             <div className="space-y-1">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 capitalize">
                 <Network className="size-4 text-primary" />
-                Infrastructure Flow
+                Luồng hạ tầng
               </CardTitle>
-              <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground/60">Visualizing provider traffic routing</CardDescription>
+              <CardDescription className="text-xs text-muted-foreground">Trực quan hóa định tuyến lưu lượng nhà cung cấp</CardDescription>
             </div>
-            <Badge variant="outline" className="h-5 px-2 bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">
-              LIVE PULSE
+            <Badge variant="outline" className="h-5 px-2 bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium capitalize">
+              Trực tiếp
             </Badge>
           </CardHeader>
-          <CardContent className="p-0 bg-muted/5 h-[400px]">
+          <CardContent className="p-0 h-[400px]">
             <ProviderTopology
               providers={providers}
               activeRequests={stats?.activeRequests || []}
@@ -366,21 +366,21 @@ function UsageDashboard() {
 
 function KPIItem({ label, value, icon: Icon, trend }) {
   return (
-    <Card className="shadow-none border-border bg-card p-0 overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+    <Card className="shadow-sm border-border/50 bg-background/50 p-0 overflow-hidden hover:bg-muted/10 transition-colors">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 border-b border-border/40 bg-muted/10">
+        <CardTitle className="text-xs font-medium text-foreground capitalize">
           {label}
         </CardTitle>
-        <Icon className="size-4 text-muted-foreground opacity-50" />
+        <Icon className="size-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent className="pb-4 px-4">
-        <div className="text-2xl font-bold tracking-tight tabular-nums">{value}</div>
-        {trend && (
+      <CardContent className="pb-4 pt-3 px-4">
+        <div className="text-2xl font-semibold tracking-tight tabular-nums">{value}</div>
+        {!!trend && (
           <p className={cn(
-            "text-[10px] font-bold mt-1",
+            "text-[10px] font-medium mt-1",
             trend.startsWith("+") ? "text-emerald-500" : "text-amber-500"
           )}>
-            {trend} <span className="text-muted-foreground font-medium ml-1 opacity-70">vs last period</span>
+            {trend} <span className="text-muted-foreground font-normal ml-1">so với kỳ trước</span>
           </p>
         )}
       </CardContent>
@@ -465,8 +465,16 @@ function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, 
       const groups = {};
       data.forEach(item => {
         const gk = item[keyField] || item.rawModel || "Unknown";
-        if (!groups[gk]) groups[gk] = { groupKey: gk, summary: { requests: 0, lastUsed: null }, items: [] };
+        if (!groups[gk]) groups[gk] = { groupKey: gk, summary: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, cost: 0, inputCost: 0, outputCost: 0, lastUsed: null }, items: [] };
+        
         groups[gk].summary.requests += item.requests || 0;
+        groups[gk].summary.promptTokens += item.promptTokens || 0;
+        groups[gk].summary.completionTokens += item.completionTokens || 0;
+        groups[gk].summary.totalTokens += item.totalTokens || ((item.promptTokens || 0) + (item.completionTokens || 0));
+        groups[gk].summary.cost += item.cost || item.totalCost || 0;
+        groups[gk].summary.inputCost += item.inputCost || 0;
+        groups[gk].summary.outputCost += item.outputCost || 0;
+        
         if (item.lastUsed && (!groups[gk].summary.lastUsed || new Date(item.lastUsed) > new Date(groups[gk].summary.lastUsed))) {
           groups[gk].summary.lastUsed = item.lastUsed;
         }
@@ -542,12 +550,12 @@ function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, 
 // --- Utilities ---
 
 function timeAgo(timestamp) {
-  if (!timestamp) return "Never";
+  if (!timestamp) return "Chưa từng";
   const diff = Math.floor((Date.now() - new Date(timestamp)) / 1000);
   if (diff < 60) return `${diff}s`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}p`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}g`;
+  return `${Math.floor(diff / 86400)}n`;
 }
 
 function TimeAgo({ timestamp }) {
@@ -556,7 +564,7 @@ function TimeAgo({ timestamp }) {
     const timer = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(timer);
   }, []);
-  return <span>{timeAgo(timestamp)} ago</span>;
+  return <span>{timeAgo(timestamp)} trước</span>;
 }
 
 function UsageLoadingState() {

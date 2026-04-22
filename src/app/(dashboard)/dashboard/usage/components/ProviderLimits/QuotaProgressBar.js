@@ -49,31 +49,28 @@ export default function QuotaProgressBar({
   const isCritical = remaining < 10;
 
   return (
-    <div className="flex flex-col gap-2.5 py-1 group/progress">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-1.5 py-1 group/progress">
+      <div className="flex items-center justify-between text-xs">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+          <span className="font-medium text-foreground capitalize">
             {label}
           </span>
           {resetDisplay && (
-            <div className="flex items-center gap-1 text-[9px] font-medium text-muted-foreground/40">
-              <Clock className="size-2.5" />
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Clock className="size-3" />
               <span>Reset: {resetDisplay}</span>
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <div className="flex items-baseline gap-1">
-            <span className={cn(
-              "text-xs font-black tabular-nums tracking-tight",
-              isCritical ? "text-destructive" : isLow ? "text-amber-500" : "text-foreground"
-            )}>
-              {unlimited ? "∞" : `${remaining}%`}
-            </span>
-            {!unlimited && <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">Rem</span>}
-          </div>
-          <span className="text-[8px] font-medium text-muted-foreground/40 tabular-nums uppercase tracking-tighter">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground tabular-nums">
             {unlimited ? "Không giới hạn" : `${used.toLocaleString()} / ${total.toLocaleString()}`}
+          </span>
+          <span className={cn(
+            "font-semibold tabular-nums",
+            isCritical ? "text-destructive" : isLow ? "text-amber-500" : "text-foreground"
+          )}>
+            {unlimited ? "∞" : `${remaining}%`}
           </span>
         </div>
       </div>
@@ -81,7 +78,7 @@ export default function QuotaProgressBar({
       {!unlimited && (
         <Progress 
           value={remaining} 
-          className="h-1.5 bg-muted/30"
+          className="h-1.5 bg-muted/40"
           indicatorClassName={cn(
             "transition-all duration-700 ease-out",
             isCritical ? "bg-destructive" : isLow ? "bg-amber-500" : "bg-primary"

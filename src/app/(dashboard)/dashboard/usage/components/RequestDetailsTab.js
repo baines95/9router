@@ -19,7 +19,8 @@ import {
   Terminal,
   BrainCircuit,
   Filter,
-  X
+  X,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -129,24 +130,24 @@ export default function RequestDetailsTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* Filters Toolbar */}
-      <Card className="shadow-none border-border bg-muted/20">
+      <Card className="shadow-sm border-border/50 bg-background/50">
         <CardContent className="p-3 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="size-3.5 text-muted-foreground opacity-50" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mr-2">Filters</span>
+            <Filter className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground capitalize mr-2">Bộ lọc</span>
           </div>
 
           <Select value={filters.provider} onValueChange={v => setFilters({ ...filters, provider: v })}>
-             <SelectTrigger className="h-8 text-[11px] font-bold uppercase tracking-wider w-[180px] bg-background border-border"><SelectValue placeholder="All Providers" /></SelectTrigger>
-             <SelectContent>{providers.map(p => <SelectItem key={p.id} value={p.id} className="text-[11px] font-bold uppercase">{p.name}</SelectItem>)}</SelectContent>
+             <SelectTrigger className="h-8 text-xs font-medium w-[180px] bg-background/50 border-border/50"><SelectValue placeholder="Tất cả nhà cung cấp" /></SelectTrigger>
+             <SelectContent>{providers.map(p => <SelectItem key={p.id} value={p.id} className="text-xs font-medium">{p.name}</SelectItem>)}</SelectContent>
           </Select>
 
-          <Input type="datetime-local" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="h-8 text-[11px] w-[180px] bg-background font-mono" />
-          <span className="text-muted-foreground opacity-30 text-[10px] font-bold">TO</span>
-          <Input type="datetime-local" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="h-8 text-[11px] w-[180px] bg-background font-mono" />
+          <Input type="datetime-local" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="h-8 text-xs w-[180px] bg-background/50 font-mono border-border/50" />
+          <span className="text-muted-foreground text-xs font-medium">Đến</span>
+          <Input type="datetime-local" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="h-8 text-xs w-[180px] bg-background/50 font-mono border-border/50" />
 
-          <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase ml-auto" onClick={() => setFilters({ provider: "", startDate: "", endDate: "" })} disabled={!filters.provider && !filters.startDate && !filters.endDate}>
-             <RotateCcw className="size-3 mr-2" /> Reset
+          <Button variant="ghost" size="sm" className="h-8 text-xs font-medium ml-auto" onClick={() => setFilters({ provider: "", startDate: "", endDate: "" })} disabled={!filters.provider && !filters.startDate && !filters.endDate}>
+             <RotateCcw className="size-3 mr-2" /> Đặt lại
           </Button>
         </CardContent>
       </Card>
@@ -213,14 +214,14 @@ export default function RequestDetailsTab() {
 
       {/* Inspector Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-xl border-l border-border p-0 flex flex-col">
-          <SheetHeader className="p-6 border-b bg-muted/20 shrink-0">
+        <SheetContent className="sm:max-w-xl border-l border-border/50 p-0 flex flex-col">
+          <SheetHeader className="p-6 border-b border-border/40 bg-muted/10 shrink-0">
              <div className="flex items-center gap-2 text-primary mb-1">
                 <History className="size-4" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Transaction Log</span>
+                <span className="text-xs font-medium capitalize">Nhật ký giao dịch</span>
              </div>
-             <SheetTitle className="text-xl font-bold tracking-tight">Request Details</SheetTitle>
-             <SheetDescription className="text-xs font-medium">Deep inspection of gateway routing and responses.</SheetDescription>
+             <SheetTitle className="text-xl font-semibold tracking-tight">Chi tiết Yêu cầu</SheetTitle>
+             <SheetDescription className="text-xs text-muted-foreground">Kiểm tra chi tiết định tuyến và phản hồi API.</SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="flex-1">
@@ -228,46 +229,46 @@ export default function RequestDetailsTab() {
               <div className="p-6 space-y-8 pb-10">
                 {/* Meta Grid */}
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-                   <MetaItem label="Request ID" value={selectedDetail.id} mono />
-                   <MetaItem label="Timestamp" value={new Date(selectedDetail.timestamp).toLocaleString()} />
-                   <MetaItem label="Model Target" value={selectedDetail.model} mono />
-                   <MetaItem label="Active Provider" value={getProviderName(selectedDetail.provider, providerNameCache)} />
+                   <MetaItem label="ID Yêu cầu" value={selectedDetail.id} mono />
+                   <MetaItem label="Thời gian" value={new Date(selectedDetail.timestamp).toLocaleString("vi-VN")} />
+                   <MetaItem label="Model" value={selectedDetail.model} mono />
+                   <MetaItem label="Nhà cung cấp" value={getProviderName(selectedDetail.provider, providerNameCache)} />
                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Status</span>
-                      <div><Badge className={cn("border-none h-5 text-[9px] font-black uppercase", selectedDetail.status === 'success' ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>{selectedDetail.status}</Badge></div>
+                      <span className="text-xs font-medium text-muted-foreground capitalize">Trạng thái</span>
+                      <div><Badge className={cn("border-none h-5 text-xs font-medium capitalize", selectedDetail.status === 'success' ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>{selectedDetail.status === 'success' ? "Thành công" : "Thất bại"}</Badge></div>
                    </div>
                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Execution</span>
-                      <div className="text-xs font-bold tabular-nums">{selectedDetail.latency?.total || 0}ms <span className="opacity-40 ml-1 font-medium">TOTAL</span></div>
+                      <span className="text-xs font-medium text-muted-foreground capitalize">Độ trễ</span>
+                      <div className="text-sm font-semibold tabular-nums">{selectedDetail.latency?.total || 0}ms</div>
                    </div>
                 </div>
 
                 {/* Data Flow Layers */}
-                <div className="space-y-4 pt-4 border-t">
-                  <CollapsibleSection title="Client Request (Original)" defaultOpen icon={FileJson}>
+                <div className="space-y-4 pt-4 border-t border-border/40">
+                  <CollapsibleSection title="Yêu cầu (Client)" defaultOpen icon={FileJson}>
                      <CodeBlock content={selectedDetail.request} />
                   </CollapsibleSection>
 
                   {selectedDetail.providerRequest && (
-                    <CollapsibleSection title="Provider Routing (Translated)" icon={Languages}>
+                    <CollapsibleSection title="Định tuyến (Provider)" icon={Languages}>
                        <CodeBlock content={selectedDetail.providerRequest} />
                     </CollapsibleSection>
                   )}
 
                   {selectedDetail.providerResponse && (
-                    <CollapsibleSection title="Provider Response (Raw)" icon={Code2}>
+                    <CollapsibleSection title="Phản hồi (Provider)" icon={Code2}>
                        <CodeBlock content={selectedDetail.providerResponse} />
                     </CollapsibleSection>
                   )}
 
-                  <CollapsibleSection title="Final Unified Response" defaultOpen icon={Terminal}>
+                  <CollapsibleSection title="Phản hồi (Client)" defaultOpen icon={Terminal}>
                      {selectedDetail.response?.thinking && (
                         <div className="mb-4 space-y-2">
                            <div className="flex items-center gap-2 text-amber-600/80">
-                              <BrainCircuit className="size-3.5" />
-                              <span className="text-[9px] font-black uppercase tracking-widest">Cognitive Chain (Thinking)</span>
+                              <BrainCircuit className="size-4" />
+                              <span className="text-xs font-medium">Cognitive Chain (Thinking)</span>
                            </div>
-                           <pre className="p-4 rounded-xl bg-amber-500/[0.03] border border-amber-500/10 text-[11px] leading-relaxed font-mono text-amber-900/80 dark:text-amber-100/80 whitespace-pre-wrap">{selectedDetail.response.thinking}</pre>
+                           <pre className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 text-xs leading-relaxed font-mono text-amber-900/80 dark:text-amber-100/80 whitespace-pre-wrap">{selectedDetail.response.thinking}</pre>
                         </div>
                      )}
                      <CodeBlock content={selectedDetail.response?.content || "[No Content]"} />
@@ -284,9 +285,9 @@ export default function RequestDetailsTab() {
 
 function MetaItem({ label, value, mono = false }) {
   return (
-    <div className="space-y-1">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">{label}</p>
-      <p className={cn("text-xs font-bold truncate", mono && "font-mono opacity-80")}>{value}</p>
+    <div className="space-y-1 min-w-0">
+      <p className="text-xs font-medium text-muted-foreground capitalize">{label}</p>
+      <p className={cn("text-sm font-medium truncate text-foreground", mono && "font-mono text-xs")}>{value}</p>
     </div>
   );
 }

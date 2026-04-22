@@ -8,14 +8,14 @@ const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
 
 function StatCard({ label, value, valueClass }) {
   return (
-    <Card className="shadow-none border-border">
-      <CardHeader className="p-3 pb-0">
-        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+    <Card className="shadow-sm border-border/50 bg-background/50 hover:bg-muted/10 transition-colors">
+      <CardHeader className="p-3 pb-2 border-b border-border/50">
+        <span className="text-xs font-medium text-foreground capitalize">
           {label}
         </span>
       </CardHeader>
-      <CardContent className="p-3 pt-1">
-        <span className={cn("text-xl font-bold tabular-nums", valueClass)}>
+      <CardContent className="p-3 pt-3">
+        <span className={cn("text-xl font-semibold tabular-nums", valueClass)}>
           {value}
         </span>
       </CardContent>
@@ -27,21 +27,21 @@ export default function OverviewCards({ stats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <StatCard 
-        label="Total Requests" 
+        label="Tổng số yêu cầu" 
         value={fmt(stats.totalRequests)} 
       />
       <StatCard 
-        label="Total Input Tokens" 
+        label="Token Nhập" 
         value={fmt(stats.totalPromptTokens)} 
         valueClass="text-primary"
       />
       <StatCard 
-        label="Output Tokens" 
+        label="Token Xuất" 
         value={fmt(stats.totalCompletionTokens)} 
         valueClass="text-emerald-500"
       />
       <StatCard 
-        label="Est. Cost" 
+        label="Chi phí ước tính" 
         value={`~${fmtCost(stats.totalCost)}`} 
         valueClass="text-amber-500"
       />

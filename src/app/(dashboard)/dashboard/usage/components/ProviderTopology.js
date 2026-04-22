@@ -221,10 +221,10 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
   }, []);
 
   return (
-    <div className="w-full rounded-lg border border-border bg-bg-subtle/30" style={{ height: 480 }}>
+    <div className="w-full h-full bg-background/50">
       {providers.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-text-muted text-sm">
-          No providers connected
+        <div className="h-full flex items-center justify-center text-muted-foreground text-sm font-medium">
+          Chưa kết nối nhà cung cấp
         </div>
       ) : (
         <ReactFlow

@@ -13,7 +13,7 @@ export function ModelRow({ model, fullModel, copied, onCopy, testStatus, isCusto
   const iconColor = testStatus === "ok" ? "#22c55e" : testStatus === "error" ? "#ef4444" : undefined;
 
   return (
-    <div className={`group px-3 py-2 rounded-lg border ${borderColor} hover:bg-sidebar/50`}>
+    <div className={`group px-3 py-2 rounded-lg border ${borderColor} bg-background/50 hover:bg-muted/10 transition-colors`}>
       <div className="flex items-center gap-2">
         <span className="material-symbols-outlined text-base" style={iconColor ? { color: iconColor } : undefined}>
           {testStatus === "ok" ? "check_circle" : testStatus === "error" ? "cancel" : "smart_toy"}
@@ -196,9 +196,9 @@ export default function ModelsCard({ providerId, kindFilter }) {
 
   return (
     <>
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Models{kindFilter ? ` — ${kindFilter.toUpperCase()}` : ""}</h2>
+      <Card className="shadow-sm border-border/50 bg-background/50 p-4">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
+          <h2 className="text-sm font-medium capitalize text-foreground">Models{kindFilter ? ` — ${kindFilter}` : ""}</h2>
         </div>
         {testError && <p className="text-xs text-red-500 mb-3 break-words">{testError}</p>}
 
@@ -266,4 +266,6 @@ export default function ModelsCard({ providerId, kindFilter }) {
 ModelsCard.propTypes = {
   providerId: PropTypes.string.isRequired,
   kindFilter: PropTypes.string, // e.g. "tts", "embedding" — filters models shown
+};
+shown
 };

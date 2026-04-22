@@ -11,12 +11,12 @@ const fmt = (n) => new Intl.NumberFormat().format(n || 0);
 const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
 
 function fmtTime(iso) {
-  if (!iso) return "Never";
+  if (!iso) return "Chưa từng";
   const diffMins = Math.floor((Date.now() - new Date(iso)) / 60000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-  return new Date(iso).toLocaleDateString();
+  if (diffMins < 1) return "Vừa xong";
+  if (diffMins < 60) return `${diffMins}p trước`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}g trước`;
+  return new Date(iso).toLocaleDateString("vi-VN");
 }
 
 function SortIcon({ field, currentSort, currentOrder }) {
@@ -45,7 +45,7 @@ function ValueCells({ item, viewMode, isSummary = false }) {
         <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
           {isSummary && item.completionTokens === undefined ? "—" : fmt(item.completionTokens)}
         </td>
-        <td className="px-4 py-3 text-right font-bold tabular-nums">
+        <td className="px-4 py-3 text-right font-medium tabular-nums">
           {fmt(item.totalTokens)}
         </td>
       </>
@@ -59,7 +59,7 @@ function ValueCells({ item, viewMode, isSummary = false }) {
       <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
         {isSummary && item.outputCost === undefined ? "—" : fmtCost(item.outputCost)}
       </td>
-      <td className="px-4 py-3 text-right font-bold text-amber-500 tabular-nums">
+      <td className="px-4 py-3 text-right font-medium text-amber-500 tabular-nums">
         {fmtCost(item.totalCost || item.cost)}
       </td>
     </>
@@ -136,30 +136,30 @@ export default function UsageTable({
   const valueColumns = useMemo(() => {
     if (viewMode === "tokens") {
       return [
-        { field: "promptTokens", label: "Input Tokens" },
-        { field: "completionTokens", label: "Output Tokens" },
-        { field: "totalTokens", label: "Total Tokens" },
+        { field: "promptTokens", label: "Token Nhập" },
+        { field: "completionTokens", label: "Token Xuất" },
+        { field: "totalTokens", label: "Tổng Tokens" },
       ];
     }
     return [
-      { field: "promptTokens", label: "Input Cost" },
-      { field: "completionTokens", label: "Output Cost" },
-      { field: "cost", label: "Total Cost" },
+      { field: "promptTokens", label: "Phí Đầu vào" },
+      { field: "completionTokens", label: "Phí Đầu ra" },
+      { field: "cost", label: "Tổng chi phí" },
     ];
   }, [viewMode]);
 
   const totalColSpan = columns.length + valueColumns.length;
 
   return (
-    <Card className="shadow-none border-border overflow-hidden">
-      <CardHeader className="p-4 border-b border-border bg-muted/30">
-        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+    <Card className="shadow-sm border-border/50 bg-background/50 overflow-hidden">
+      <CardHeader className="p-3 pb-2 border-b border-border/50 bg-muted/10">
+        <CardTitle className="text-sm font-medium text-foreground capitalize">
           {title}
         </CardTitle>
       </CardHeader>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
+          <thead className="bg-muted/10 text-muted-foreground text-xs font-medium">
             <tr>
               {columns.map((col) => (
                 <th

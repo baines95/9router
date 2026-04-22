@@ -50,9 +50,9 @@ export default function UsageChart({ period = "7d" }) {
   const hasData = data.some((d) => d.tokens > 0 || d.cost > 0);
 
   return (
-    <Card className="shadow-none border-border">
-      <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+    <Card className="shadow-sm border-border/50 bg-background/50">
+      <CardHeader className="flex flex-row items-center justify-between p-3 pb-2 border-b border-border/50">
+        <CardTitle className="text-sm font-medium text-foreground capitalize">
           Usage History
         </CardTitle>
         <ToggleGroup 
@@ -60,18 +60,18 @@ export default function UsageChart({ period = "7d" }) {
           value={viewMode} 
           onValueChange={(v) => v && setViewMode(v)}
           size="sm"
-          className="border border-border p-0.5 rounded-lg"
+          className="border border-border/50 p-0.5 rounded-lg bg-background"
         >
-          <ToggleGroupItem value="tokens" className="px-3 rounded-md text-xs">Tokens</ToggleGroupItem>
-          <ToggleGroupItem value="cost" className="px-3 rounded-md text-xs">Cost</ToggleGroupItem>
+          <ToggleGroupItem value="tokens" className="px-3 rounded-md text-xs font-medium">Tokens</ToggleGroupItem>
+          <ToggleGroupItem value="cost" className="px-3 rounded-md text-xs font-medium">Cost</ToggleGroupItem>
         </ToggleGroup>
       </CardHeader>
 
-      <CardContent className="p-4 pt-2">
+      <CardContent className="p-3 pt-4">
         {loading ? (
-          <div className="h-48 flex items-center justify-center text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Loading...</div>
+          <div className="h-48 flex items-center justify-center text-muted-foreground text-xs font-medium">Đang tải...</div>
         ) : !hasData ? (
-          <div className="h-48 flex items-center justify-center text-muted-foreground text-[10px] uppercase font-bold tracking-widest">No data for this period</div>
+          <div className="h-48 flex items-center justify-center text-muted-foreground text-xs font-medium">Không có dữ liệu trong khoảng thời gian này</div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
