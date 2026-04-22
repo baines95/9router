@@ -1,6 +1,9 @@
 "use client";
 
-import { cn } from "@/shared/utils/cn";
+import * as React from "react";
+import { Skeleton as ShadcnSkeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 // Spinner loading
 export function Spinner({ size = "md", className }) {
@@ -12,24 +15,22 @@ export function Spinner({ size = "md", className }) {
   };
 
   return (
-    <span
+    <Loader2
       className={cn(
-        "material-symbols-outlined animate-spin text-primary",
+        "animate-spin text-primary",
         sizes[size],
         className
       )}
-    >
-      progress_activity
-    </span>
+    />
   );
 }
 
 // Full page loading
 export function PageLoading({ message = "Loading..." }) {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       <Spinner size="xl" />
-      <p className="mt-4 text-text-muted">{message}</p>
+      <p className="mt-4 text-muted-foreground">{message}</p>
     </div>
   );
 }
@@ -37,11 +38,8 @@ export function PageLoading({ message = "Loading..." }) {
 // Skeleton loading
 export function Skeleton({ className, ...props }) {
   return (
-    <div
-      className={cn(
-        "animate-pulse rounded-lg bg-border",
-        className
-      )}
+    <ShadcnSkeleton
+      className={cn("rounded-lg", className)}
       {...props}
     />
   );
@@ -50,7 +48,7 @@ export function Skeleton({ className, ...props }) {
 // Card skeleton
 export function CardSkeleton() {
   return (
-    <div className="p-6 rounded-xl border border-border bg-surface">
+    <div className="p-6 rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="size-10 rounded-lg" />
@@ -74,4 +72,3 @@ export default function Loading({ type = "spinner", ...props }) {
       return <Spinner {...props} />;
   }
 }
-

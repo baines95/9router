@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, Badge, Input } from "@/shared/components";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Shield, CheckCircle2, XCircle, ArrowRight, ShieldCheck, StopCircle, PlayCircle, AlertCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_MITM_ROUTER_BASE = "http://localhost:20128";
 
@@ -119,132 +124,137 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
 
   return (
     <>
-      <Card padding="sm" className="border-primary/20 bg-primary/5">
-        <div className="flex flex-col gap-3">
+      <Card className="border-primary/20 bg-primary/5 shadow-none p-4">
+        <div className="flex flex-col gap-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[20px]">security</span>
-              <span className="font-semibold text-sm text-text-main">MITM Server</span>
+              <Shield className="size-5 text-primary" />
+              <span className="font-semibold text-sm text-foreground">MITM Server</span>
               {isRunning ? (
-                <Badge variant="success" size="sm">Running</Badge>
+                <Badge className="h-5 px-1.5 text-[10px] bg-green-500/10 text-green-600 border-green-500/20 shadow-none">Running</Badge>
               ) : (
-                <Badge variant="default" size="sm">Stopped</Badge>
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] shadow-none">Stopped</Badge>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-text-muted" data-i18n-skip="true">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {[
                 { label: "Cert", ok: status?.certExists },
                 { label: "Trusted", ok: status?.certTrusted },
                 { label: "Server", ok: isRunning },
               ].map(({ label, ok }) => (
-                <span key={label} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded ${ok ? "text-green-600" : "text-text-muted"}`}>
-                  <span className="material-symbols-outlined text-[12px]">
-                    {ok ? "check_circle" : "cancel"}
-                  </span>
-                  {label}
-                </span>
+                <div key={label} className="flex items-center gap-1">
+                  {ok ? <CheckCircle2 className="size-3 text-green-600" /> : <XCircle className="size-3 text-muted-foreground" />}
+                  <span className={cn(ok ? "text-green-600 font-medium" : "text-muted-foreground")}>{label}</span>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Purpose & How it works */}
-          <div className="px-2 py-2 rounded-lg bg-surface/50 border border-border/50 flex flex-col gap-2">
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              <span className="font-medium text-text-main">Purpose:</span> Use Antigravity IDE & GitHub Copilot → with ANY provider/model from 8Router
+          <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col gap-2.5">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">Purpose:</span> Use Antigravity IDE & GitHub Copilot with ANY provider/model from 8Router.
             </p>
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              <span className="font-medium text-text-main">How it works:</span> Antigravity/Copilot IDE request → DNS redirect to localhost:443 → MITM proxy intercepts → 8Router → response to Antigravity/Copilot
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">How it works:</span> Antigravity/Copilot IDE request → DNS redirect to localhost:443 → MITM proxy intercepts → 8Router → response.
             </p>
           </div>
 
           {/* Base URL + API Key — same row pattern as Claude Code / cli-tools */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2">
-              <span className="w-32 shrink-0 text-sm font-semibold text-text-main text-right">8Router Base URL</span>
-              <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
-              <input
-                type="text"
-                value={mitmRouterBaseUrl}
-                onChange={(e) => setMitmRouterBaseUrl(e.target.value)}
-                placeholder={DEFAULT_MITM_ROUTER_BASE}
-                disabled={isRunning}
-                className="flex-1 min-w-0 px-2 py-1.5 bg-surface rounded border border-border text-xs text-text-main focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
-              />
+              <span className="w-32 shrink-0 text-xs font-semibold text-foreground text-right">8Router Base URL</span>
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  value={mitmRouterBaseUrl}
+                  onChange={(e) => setMitmRouterBaseUrl(e.target.value)}
+                  placeholder={DEFAULT_MITM_ROUTER_BASE}
+                  disabled={isRunning}
+                  className="h-8 text-xs"
+                />
+              </div>
             </div>
             {!isRunning && (
               <div className="flex items-center gap-2">
-                <span className="w-32 shrink-0 text-sm font-semibold text-text-main text-right">API Key</span>
-                <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
-                {apiKeys?.length > 0 ? (
-                  <select
-                    value={selectedApiKey}
-                    onChange={(e) => setSelectedApiKey(e.target.value)}
-                    className="flex-1 min-w-0 px-2 py-1.5 bg-surface rounded text-xs border border-border text-text-main focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  >
-                    {apiKeys.map((key) => (
-                      <option key={key.id} value={key.key}>
-                        {key.key}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="flex-1 px-2 py-1.5 text-xs text-text-muted">
-                    {cloudEnabled ? "No API keys — create one in Keys page" : "sk_8router (default)"}
-                  </span>
-                )}
+                <span className="w-32 shrink-0 text-xs font-semibold text-foreground text-right">API Key</span>
+                <div className="flex-1">
+                  {apiKeys?.length > 0 ? (
+                    <select
+                      value={selectedApiKey}
+                      onChange={(e) => setSelectedApiKey(e.target.value)}
+                      className="w-full h-8 px-2 bg-background rounded-lg border border-input text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {apiKeys.map((key) => (
+                        <option key={key.id} value={key.key}>
+                          {key.key}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs text-muted-foreground px-2 py-1.5 block">
+                      {cloudEnabled ? "No API keys — create one in Keys page" : "sk_8router (default)"}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-wrap" data-i18n-skip="true">
+          <div className="flex items-center gap-2 flex-wrap">
             {status?.certExists && !status?.certTrusted && (
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleAction("trust-cert")}
                 disabled={loading}
-                className="px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 font-medium text-xs flex items-center gap-1.5 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+                className="h-8 bg-yellow-500/10 border-yellow-500/20 text-yellow-600 hover:bg-yellow-500/20 shadow-none text-xs"
               >
-                <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                <ShieldCheck className="size-4 mr-1.5" />
                 Trust Cert
-              </button>
+              </Button>
             )}
             {isRunning ? (
-              <button
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => handleAction("stop")}
                 disabled={loading}
-                className="px-4 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 font-medium text-xs flex items-center gap-1.5 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                className="h-8 bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20 shadow-none text-xs"
               >
-                <span className="material-symbols-outlined text-[16px]">stop_circle</span>
+                <StopCircle className="size-4 mr-1.5" />
                 Stop Server
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                size="sm"
                 onClick={() => handleAction("start")}
                 disabled={loading || (isWindows && !isAdmin)}
-                className="px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary font-medium text-xs flex items-center gap-1.5 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                className="h-8 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shadow-none text-xs"
               >
-                <span className="material-symbols-outlined text-[16px]">play_circle</span>
+                <PlayCircle className="size-4 mr-1.5" />
                 Start Server
-              </button>
+              </Button>
             )}
             {isRunning && (
-              <p className="text-xs text-text-muted">Enable DNS per tool below to activate interception</p>
+              <p className="text-[11px] text-muted-foreground ml-auto">Enable DNS per tool below to activate interception</p>
             )}
           </div>
 
           {/* Action error */}
           {actionError && (
-            <div className="flex items-start gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-              <span className="material-symbols-outlined text-[14px] mt-0.5 shrink-0">error</span>
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg text-xs bg-destructive/10 text-destructive border-destructive/20 shadow-none">
+              <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
               <span>{actionError}</span>
             </div>
           )}
 
           {/* Windows admin warning */}
           {isWindows && !isAdmin && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600 border border-red-500/20">
-              <span className="material-symbols-outlined text-[14px]">shield_lock</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-destructive/10 text-destructive border-destructive/20 shadow-none">
+              <Shield className="size-3.5" />
               <span>Administrator required — restart 8Router as Administrator to use MITM</span>
             </div>
           )}
@@ -254,11 +264,11 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-xl">
-            <h3 className="font-semibold text-text-main">Sudo Password Required</h3>
-            <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <span className="material-symbols-outlined text-yellow-500 text-[20px]">warning</span>
-              <p className="text-xs text-text-muted">Required for SSL certificate and server startup</p>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-none">
+            <h3 className="font-semibold text-foreground">Sudo Password Required</h3>
+            <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <AlertTriangle className="size-5 text-yellow-500 shrink-0" />
+              <p className="text-xs text-muted-foreground">Required for SSL certificate and server startup</p>
             </div>
             <Input
               type="password"
@@ -266,10 +276,11 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
               value={sudoPassword}
               onChange={(e) => setSudoPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !loading) handleConfirmPassword(); }}
+              className="h-9"
             />
             {modalError && (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
-                <span className="material-symbols-outlined text-[14px]">error</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-destructive/10 text-destructive border-destructive/20 shadow-none">
+                <AlertCircle className="size-3.5" />
                 <span>{modalError}</span>
               </div>
             )}
@@ -277,8 +288,8 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
               <Button variant="ghost" size="sm" onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setModalError(null); }} disabled={loading}>
                 Cancel
               </Button>
-              <Button variant="primary" size="sm" onClick={handleConfirmPassword} loading={loading}>
-                Confirm
+              <Button size="sm" onClick={handleConfirmPassword} disabled={loading}>
+                {loading ? "Confirming..." : "Confirm"}
               </Button>
             </div>
           </div>

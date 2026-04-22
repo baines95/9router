@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, Button, Badge, Input, ModelSelectModal } from "@/shared/components";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { ModelSelectModal } from "@/shared/components";
 import Image from "next/image";
+import { ChevronDown, ArrowRight, X, StopCircle, PlayCircle, AlertTriangle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Per-tool MITM card — shows DNS status + model mappings.
@@ -127,7 +133,7 @@ export default function MitmToolCard({
 
   return (
     <>
-      <Card padding="xs" className="overflow-hidden">
+      <Card className="overflow-hidden shadow-none p-3">
         <div className="flex items-center justify-between hover:cursor-pointer" onClick={onToggle}>
           <div className="flex items-center gap-3">
             <div className="size-8 flex items-center justify-center shrink-0">
@@ -143,27 +149,25 @@ export default function MitmToolCard({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium text-sm">{tool.name}</h3>
+                <h3 className="font-medium text-sm leading-none">{tool.name}</h3>
                 {!serverRunning ? (
-                  <Badge variant="default" size="sm">Server off</Badge>
+                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Server off</Badge>
                 ) : dnsActive ? (
-                  <Badge variant="success" size="sm">Active</Badge>
+                  <Badge className="h-5 px-1.5 text-[10px] bg-green-500/10 text-green-600 border-green-500/20 shadow-none">Active</Badge>
                 ) : (
-                  <Badge variant="warning" size="sm">DNS off</Badge>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-yellow-500/10 text-yellow-600 border-yellow-500/20 shadow-none">DNS off</Badge>
                 )}
               </div>
-              <p className="text-xs text-text-muted">Intercept {tool.name} requests via MITM proxy</p>
+              <p className="text-xs text-muted-foreground mt-1">Intercept {tool.name} requests via MITM proxy</p>
             </div>
           </div>
-          <span className={`material-symbols-outlined text-text-muted text-[20px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>
-            expand_more
-          </span>
+          <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
         </div>
 
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-border flex flex-col gap-4">
             {/* Info */}
-            <div className="flex flex-col gap-0.5 text-[11px] text-text-muted px-1">
+            <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground px-1">
               <p>Toggle DNS to redirect {tool.name} traffic through 8Router via MITM.</p>
               {!dnsActive && (
                 <p className="text-amber-600 text-[10px] mt-1">
@@ -177,35 +181,39 @@ export default function MitmToolCard({
               <div className="flex flex-col gap-2">
                 {tool.defaultModels.map((model) => (
                   <div key={model.alias} className="flex items-center gap-2">
-                    <span className="w-36 shrink-0 text-xs font-semibold text-text-main text-right">{model.name}</span>
-                    <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
-                    <input
+                    <span className="w-32 shrink-0 text-xs font-semibold text-foreground text-right">{model.name}</span>
+                    <ArrowRight className="size-3 text-muted-foreground shrink-0" />
+                    <Input
                       type="text"
                       value={modelMappings[model.alias] || ""}
                       onChange={(e) => handleModelMappingChange(model.alias, e.target.value)}
                       onBlur={(e) => handleMappingBlur(model.alias, e.target.value)}
                       placeholder="provider/model-id"
                       disabled={!dnsActive}
-                      className={`flex-1 px-2 py-1.5 bg-surface rounded border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 ${!dnsActive ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className="h-8 flex-1 text-xs"
                     />
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => openModelSelector(model.alias)}
                       disabled={!hasActiveProviders || !dnsActive}
-                      className={`px-2 py-1.5 rounded border text-xs transition-colors shrink-0 ${hasActiveProviders && dnsActive ? "bg-surface border-border hover:border-primary cursor-pointer" : "opacity-50 cursor-not-allowed border-border"}`}
+                      className="h-8 px-3 text-xs"
                     >
                       Select
-                    </button>
+                    </Button>
                     {modelMappings[model.alias] && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           handleModelMappingChange(model.alias, "");
                           saveMappings({ ...modelMappings, [model.alias]: "" });
                         }}
-                        className="p-1 text-text-muted hover:text-red-500 rounded transition-colors"
+                        className="size-8 text-muted-foreground hover:text-destructive"
                         title="Clear"
                       >
-                        <span className="material-symbols-outlined text-[14px]">close</span>
-                      </button>
+                        <X className="size-3.5" />
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -213,35 +221,39 @@ export default function MitmToolCard({
             )}
 
             {tool.defaultModels?.length === 0 && (
-              <p className="text-xs text-text-muted px-1">Model mappings will be available soon.</p>
+              <p className="text-xs text-muted-foreground px-1">Model mappings will be available soon.</p>
             )}
 
             {/* Start / Stop DNS button */}
             <div className="flex flex-col gap-2 items-start">
               {dnsActive ? (
-                <button
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={handleDnsToggle}
                   disabled={!serverRunning || loading}
-                  className="px-4 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 font-medium text-xs flex items-center gap-1.5 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-8 bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20 shadow-none"
                 >
-                  <span className="material-symbols-outlined text-[16px]">stop_circle</span>
+                  <StopCircle className="size-4 mr-1.5" />
                   Stop DNS
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  variant="default"
+                  size="sm"
                   onClick={handleDnsToggle}
                   disabled={!serverRunning || loading}
-                  className="px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary font-medium text-xs flex items-center gap-1.5 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-8 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shadow-none"
                 >
-                  <span className="material-symbols-outlined text-[16px]">play_circle</span>
+                  <PlayCircle className="size-4 mr-1.5" />
                   Start DNS
-                </button>
+                </Button>
               )}
 
               {/* Warning below button */}
               {warning && (
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-amber-500">
-                  <span className="material-symbols-outlined text-[14px]">warning</span>
+                  <AlertTriangle className="size-3.5" />
                   <span>{warning}</span>
                 </div>
               )}
@@ -253,11 +265,11 @@ export default function MitmToolCard({
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-xl">
-            <h3 className="font-semibold text-text-main">Sudo Password Required</h3>
-            <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <span className="material-symbols-outlined text-yellow-500 text-[20px]">warning</span>
-              <p className="text-xs text-text-muted">Required to modify /etc/hosts and flush DNS cache</p>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-none">
+            <h3 className="font-semibold text-foreground">Sudo Password Required</h3>
+            <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <AlertTriangle className="size-5 text-amber-500 shrink-0" />
+              <p className="text-xs text-muted-foreground">Required to modify /etc/hosts and flush DNS cache</p>
             </div>
             <Input
               type="password"
@@ -265,10 +277,11 @@ export default function MitmToolCard({
               value={sudoPassword}
               onChange={(e) => setSudoPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !loading) handleConfirmPassword(); }}
+              className="h-9"
             />
             {modalError && (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
-                <span className="material-symbols-outlined text-[14px]">error</span>
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-destructive/10 text-destructive">
+                <AlertCircle className="size-3.5" />
                 <span>{modalError}</span>
               </div>
             )}
@@ -276,8 +289,8 @@ export default function MitmToolCard({
               <Button variant="ghost" size="sm" onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setModalError(null); }} disabled={loading}>
                 Cancel
               </Button>
-              <Button variant="primary" size="sm" onClick={handleConfirmPassword} loading={loading}>
-                Confirm
+              <Button size="sm" onClick={handleConfirmPassword} disabled={loading}>
+                {loading ? "Confirming..." : "Confirm"}
               </Button>
             </div>
           </div>

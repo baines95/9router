@@ -1,10 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/components";
-import Image from "next/image";
+import { 
+  Button, 
+  Input, 
+  ModelSelectModal, 
+  ManualConfigModal,
+  Tooltip
+} from "@/shared/components";
+import { BaseToolCard } from "./";
+import { 
+  RotateCcw, 
+  X, 
+  Plus, 
+  Info, 
+  Search 
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, apiKeys, activeProviders, cloudEnabled, initialStatus }) {
+export default function CopilotToolCard({ 
+  tool, 
+  isExpanded, 
+  onToggle, 
+  baseUrl, 
+  apiKeys, 
+  activeProviders, 
+  cloudEnabled, 
+  initialStatus 
+}) {
   const [status, setStatus] = useState(initialStatus || null);
   const [checking, setChecking] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -14,7 +37,6 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
   const [modelAliases, setModelAliases] = useState({});
   const [showManualConfigModal, setShowManualConfigModal] = useState(false);
 
-  // Model list management
   const [modelInput, setModelInput] = useState("");
   const [modelList, setModelList] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -37,7 +59,6 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
     if (isExpanded) fetchModelAliases();
   }, [isExpanded]);
 
-  // Pre-fill model list from existing config
   useEffect(() => {
     if (status?.config && Array.isArray(status.config) && modelList.length === 0) {
       const entry = status.config.find((e) => e.name === "8Router");
@@ -58,7 +79,7 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
   };
 
   const getConfigStatus = () => {
-    if (!status) return null;
+    if (!status) return "not_configured";
     if (!status.has8Router) return "not_configured";
     const url = status.currentUrl || "";
     return url.includes("localhost") || url.includes("127.0.0.1") || url.includes(baseUrl)
@@ -105,10 +126,10 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: data.message || "Settings applied successfully!" });
+        setMessage({ type: "success", text: "Áp dụng cấu hình thành công!" });
         checkStatus();
       } else {
-        setMessage({ type: "error", text: data.error || "Failed to apply settings" });
+        setMessage({ type: "error", text: data.error || "Không thể áp dụng cấu hình" });
       }
     } catch (error) {
       setMessage({ type: "error", text: error.message });
@@ -124,11 +145,11 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
       const res = await fetch("/api/cli-tools/copilot-settings", { method: "DELETE" });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Settings reset successfully!" });
+        setMessage({ type: "success", text: "Đã đặt lại cấu hình!" });
         setModelList([]);
         checkStatus();
       } else {
-        setMessage({ type: "error", text: data.error || "Failed to reset settings" });
+        setMessage({ type: "error", text: data.error || "Không thể đặt lại cấu hình" });
       }
     } catch (error) {
       setMessage({ type: "error", text: error.message });
@@ -160,136 +181,130 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
   };
 
   return (
-    <Card padding="sm" className="overflow-hidden">
-      <div className="flex items-center justify-between hover:cursor-pointer" onClick={onToggle}>
-        <div className="flex items-center gap-3">
-          <div className="size-8 flex items-center justify-center shrink-0">
-            <Image src="/providers/copilot.png" alt={tool.name} width={32} height={32} className="size-8 object-contain rounded-lg" sizes="32px" onError={(e) => { e.target.style.display = "none"; }} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-sm">{tool.name}</h3>
-              {configStatus === "configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">Connected</span>}
-              {configStatus === "not_configured" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-full">Not configured</span>}
-              {configStatus === "other" && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full">Other</span>}
+    <>
+      <BaseToolCard
+        tool={tool}
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+        status={configStatus}
+        checking={checking}
+        applying={applying}
+        restoring={restoring}
+        message={message}
+        onApply={handleApply}
+        onReset={handleReset}
+        onShowManualConfig={() => setShowManualConfigModal(true)}
+        onCheckStatus={checkStatus}
+        hasActiveProviders={activeProviders?.length > 0 && modelList.length > 0}
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <Info className="text-blue-500 size-5 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                Ghi vào tệp <code className="px-1.5 py-0.5 bg-blue-500/20 rounded font-mono text-[11px]">chatLanguageModels.json</code>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Hãy khởi động lại VS Code sau khi áp dụng để thay đổi có hiệu lực.
+              </p>
             </div>
-            <p className="text-xs text-text-muted truncate">{tool.description}</p>
           </div>
-        </div>
-        <span className={`material-symbols-outlined text-text-muted text-[20px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>expand_more</span>
-      </div>
 
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-4">
-          {checking && (
-            <div className="flex items-center gap-2 text-text-muted">
-              <span className="material-symbols-outlined animate-spin">progress_activity</span>
-              <span>Checking Copilot config...</span>
-            </div>
-          )}
-
-          {!checking && (
-            <>
-              {/* Info */}
-              <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <span className="material-symbols-outlined text-blue-500 text-lg">info</span>
-                <div className="text-xs text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">Writes to <code className="px-1 bg-black/5 dark:bg-white/10 rounded">chatLanguageModels.json</code></p>
-                  <p className="mt-0.5 opacity-80">Reload VS Code after applying for changes to take effect.</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {/* API Key */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-text-muted">API Key</label>
-                  {apiKeys.length > 0 ? (
-                    <select value={selectedApiKey} onChange={(e) => setSelectedApiKey(e.target.value)} className="px-3 py-2 bg-bg-secondary rounded-lg text-sm border border-border focus:outline-none focus:ring-1 focus:ring-primary/50">
-                      {apiKeys.map((key) => <option key={key.id} value={key.key}>{key.key}</option>)}
-                    </select>
-                  ) : (
-                    <span className="text-sm text-text-muted">
-                      {cloudEnabled ? "No API keys - Create one in Keys page" : "sk_8router (default)"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Model input + Add */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-text-muted">
-                    Models {modelList.length > 0 && <span className="text-primary">({modelList.length} added)</span>}
-                  </label>
-
-                  {/* Model list */}
-                  {modelList.length > 0 && (
-                    <div className="flex flex-col gap-1 mb-1">
-                      {modelList.map((id) => (
-                        <div key={id} className="flex items-center gap-2 px-3 py-1.5 bg-bg-secondary rounded-lg border border-border">
-                          <span className="flex-1 text-sm font-mono truncate">{id}</span>
-                          <button onClick={() => removeModel(id)} className="text-text-muted hover:text-red-500 transition-colors" title="Remove">
-                            <span className="material-symbols-outlined text-[14px]">close</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={modelInput}
-                      onChange={(e) => setModelInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && addModel()}
-                      placeholder="provider/model-id"
-                      className="flex-1 px-3 py-2 bg-bg-secondary rounded-lg text-sm border border-border focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    />
-                    <button onClick={() => setModalOpen(true)} disabled={!activeProviders?.length} className={`px-3 py-2 rounded-lg border text-sm transition-colors shrink-0 ${activeProviders?.length ? "bg-bg-secondary border-border hover:border-primary cursor-pointer" : "opacity-50 cursor-not-allowed border-border"}`}>Select</button>
-                    <button onClick={addModel} disabled={!modelInput.trim()} className="px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border hover:border-primary transition-colors shrink-0 disabled:opacity-50" title="Add model">
-                      <span className="material-symbols-outlined text-[16px]">add</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {message && (
-                <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
-                  <span className="material-symbols-outlined text-[14px]">{message.type === "success" ? "check_circle" : "error"}</span>
-                  <span>{message.text}</span>
+          <div className="grid grid-cols-1 gap-4">
+            {/* API Key */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-2">
+                <Search className="size-3" />
+                API Key
+              </label>
+              {apiKeys?.length > 0 ? (
+                <select 
+                  value={selectedApiKey} 
+                  onChange={(e) => setSelectedApiKey(e.target.value)} 
+                  className="w-full h-9 px-3 py-1 bg-background border border-input rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+                >
+                  {apiKeys.map((key) => <option key={key.id} value={key.key}>{key.key}</option>)}
+                </select>
+              ) : (
+                <div className="h-9 flex items-center px-3 bg-muted/20 border border-border rounded-md text-xs text-muted-foreground">
+                  {cloudEnabled ? "Chưa có API key" : "sk_8router (Mặc định)"}
                 </div>
               )}
+            </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="primary" size="sm" onClick={handleApply} disabled={modelList.length === 0} loading={applying}>
-                  <span className="material-symbols-outlined text-[14px] mr-1">save</span>Apply
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} disabled={!status?.has8Router} loading={restoring}>
-                  <span className="material-symbols-outlined text-[14px] mr-1">restore</span>Reset
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowManualConfigModal(true)} disabled={modelList.length === 0}>
-                  <span className="material-symbols-outlined text-[14px] mr-1">content_copy</span>Manual Config
-                </Button>
+            {/* Models */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                Danh sách Model ({modelList.length})
+              </label>
+              
+              <div className="space-y-2">
+                {modelList.map((id) => (
+                  <div key={id} className="flex items-center gap-2 p-2 bg-muted/30 border border-border/50 rounded-lg group">
+                    <span className="flex-1 text-xs font-mono truncate">{id}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon-xs" 
+                      onClick={() => removeModel(id)} 
+                      className="text-muted-foreground hover:text-destructive shrink-0"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={modelInput} 
+                    onChange={(e) => setModelInput(e.target.value)} 
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addModel(); } }}
+                    placeholder="provider/model-id" 
+                    className="h-9 text-xs flex-1"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setModalOpen(true)} 
+                    disabled={!activeProviders?.length}
+                    className="h-9 px-3 shrink-0 font-semibold"
+                  >
+                    Chọn
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon-sm" 
+                    onClick={addModel} 
+                    disabled={!modelInput.trim()} 
+                    className="h-9 w-9 shrink-0"
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
-      )}
+      </BaseToolCard>
 
       <ModelSelectModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSelect={(model) => { setModelInput(model.value); setModalOpen(false); }}
+        onSelect={(model) => { 
+          setModelInput(model.value); 
+          setModalOpen(false); 
+        }}
         selectedModel={modelInput}
         activeProviders={activeProviders}
         modelAliases={modelAliases}
-        title="Select Model for GitHub Copilot"
+        title="Chọn Model cho GitHub Copilot"
       />
 
       <ManualConfigModal
         isOpen={showManualConfigModal}
         onClose={() => setShowManualConfigModal(false)}
-        title="GitHub Copilot - Manual Configuration"
+        title="GitHub Copilot - Cấu hình thủ công"
         configs={getManualConfigs()}
       />
-    </Card>
+    </>
   );
 }

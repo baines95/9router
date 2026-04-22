@@ -12,7 +12,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import Card from "@/shared/components/Card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const fmtTokens = (n) => {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -49,89 +50,93 @@ export default function UsageChart({ period = "7d" }) {
   const hasData = data.some((d) => d.tokens > 0 || d.cost > 0);
 
   return (
-    <Card className="p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-1 bg-bg-subtle rounded-lg p-1 border border-border self-start">
-        <button
-          onClick={() => setViewMode("tokens")}
-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+    <Card className="shadow-none border-border">
+      <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          Usage History
+        </CardTitle>
+        <ToggleGroup 
+          type="single" 
+          value={viewMode} 
+          onValueChange={(v) => v && setViewMode(v)}
+          size="sm"
+          className="border border-border p-0.5 rounded-lg"
         >
-          Tokens
-        </button>
-        <button
-          onClick={() => setViewMode("cost")}
-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "cost" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
-        >
-          Cost
-        </button>
-      </div>
+          <ToggleGroupItem value="tokens" className="px-3 rounded-md text-xs">Tokens</ToggleGroupItem>
+          <ToggleGroupItem value="cost" className="px-3 rounded-md text-xs">Cost</ToggleGroupItem>
+        </ToggleGroup>
+      </CardHeader>
 
-      {loading ? (
-        <div className="h-48 flex items-center justify-center text-text-muted text-sm">Loading...</div>
-      ) : !hasData ? (
-        <div className="h-48 flex items-center justify-center text-text-muted text-sm">No data for this period</div>
-      ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="gradTokens" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradCost" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.5 }}
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.5 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={viewMode === "tokens" ? fmtTokens : fmtCost}
-              width={50}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--color-bg)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-              }}
-              formatter={(value, name) =>
-                name === "tokens" ? [fmtTokens(value), "Tokens"] : [fmtCost(value), "Cost"]
-              }
-            />
-            {viewMode === "tokens" ? (
-              <Area
-                type="monotone"
-                dataKey="tokens"
-                stroke="#6366f1"
-                strokeWidth={2}
-                fill="url(#gradTokens)"
-                dot={false}
-                activeDot={{ r: 4 }}
+      <CardContent className="p-4 pt-2">
+        {loading ? (
+          <div className="h-48 flex items-center justify-center text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Loading...</div>
+        ) : !hasData ? (
+          <div className="h-48 flex items-center justify-center text-muted-foreground text-[10px] uppercase font-bold tracking-widest">No data for this period</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradTokens" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradCost" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.5} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
               />
-            ) : (
-              <Area
-                type="monotone"
-                dataKey="cost"
-                stroke="#f59e0b"
-                strokeWidth={2}
-                fill="url(#gradCost)"
-                dot={false}
-                activeDot={{ r: 4 }}
+              <YAxis
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={viewMode === "tokens" ? fmtTokens : fmtCost}
               />
-            )}
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  boxShadow: "none",
+                }}
+                itemStyle={{ padding: "0" }}
+                formatter={(value, name) =>
+                  name === "tokens" ? [fmtTokens(value), "Tokens"] : [fmtCost(value), "Cost"]
+                }
+              />
+              {viewMode === "tokens" ? (
+                <Area
+                  type="monotone"
+                  dataKey="tokens"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  fill="url(#gradTokens)"
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0 }}
+                />
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey="cost"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  fill="url(#gradCost)"
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
     </Card>
   );
 }

@@ -1,7 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Card from "./Card";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  History, 
+  RefreshCw, 
+  Activity, 
+  Terminal,
+  Info
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function RequestLogger() {
   const [logs, setLogs] = useState([]);
@@ -38,83 +55,71 @@ export default function RequestLogger() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Request Logs</h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-text-muted flex items-center gap-2 cursor-pointer">
-            <span>Auto Refresh (3s)</span>
-            <div
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${autoRefresh ? "bg-primary" : "bg-bg-subtle border border-border"
-                }`}
-            >
-              <span
-                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${autoRefresh ? "translate-x-5" : "translate-x-1"
-                  }`}
-              />
-            </div>
-          </label>
+           <Terminal className="size-4 text-primary" />
+           <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Gateway Event Stream</h2>
+        </div>
+        <div className="flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-full border border-border">
+          <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground opacity-60">Auto-Stream</Label>
+          <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75 data-[state=checked]:bg-emerald-500" />
         </div>
       </div>
 
-      <Card className="overflow-hidden bg-black/5 dark:bg-black/20">
-        <div className="p-0 overflow-x-auto max-h-[600px] overflow-y-auto font-mono text-xs">
-          {loading && logs.length === 0 ? (
-            <div className="p-8 text-center text-text-muted">Loading logs...</div>
-          ) : logs.length === 0 ? (
-            <div className="p-8 text-center text-text-muted">No logs recorded yet.</div>
-          ) : (
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead className="sticky top-0 bg-bg-subtle border-b border-border z-10">
+      <Card className="shadow-none border-border overflow-hidden p-0 bg-muted/5">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-mono text-[11px] leading-none whitespace-nowrap">
+              <thead className="bg-muted/50 border-b border-border text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 <tr>
-                  <th className="px-3 py-2 border-r border-border">DateTime</th>
-                  <th className="px-3 py-2 border-r border-border">Model</th>
-                  <th className="px-3 py-2 border-r border-border">Provider</th>
-                  <th className="px-3 py-2 border-r border-border">Account</th>
-                  <th className="px-3 py-2 border-r border-border">In</th>
-                  <th className="px-3 py-2 border-r border-border">Out</th>
-                  <th className="px-3 py-2">Status</th>
+                  <th className="px-4 py-3">Timestamp</th>
+                  <th className="px-4 py-3">Infrastructure Node</th>
+                  <th className="px-4 py-3 text-center">Provider</th>
+                  <th className="px-4 py-3">Credential Identity</th>
+                  <th className="px-4 py-3 text-right">In</th>
+                  <th className="px-4 py-3 text-right">Out</th>
+                  <th className="px-4 py-3">Status Pipeline</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/50">
-                {logs.map((log, i) => {
-                  const parts = log.split(" | ");
-                  if (parts.length < 7) return null;
+              <tbody className="divide-y divide-border/40">
+                {loading && logs.length === 0 ? (
+                  <tr><td colSpan="7" className="p-12 text-center text-muted-foreground opacity-30 uppercase font-black tracking-widest animate-pulse">Syncing logs...</td></tr>
+                ) : logs.length === 0 ? (
+                  <tr><td colSpan="7" className="p-12 text-center text-muted-foreground opacity-30 uppercase font-black tracking-widest">Awaiting traffic events...</td></tr>
+                ) : (
+                  logs.map((log, i) => {
+                    const parts = log.split(" | ");
+                    if (parts.length < 7) return null;
+                    const status = parts[6];
+                    const isPending = status.includes("PENDING");
+                    const isFailed = status.includes("FAILED");
+                    const isSuccess = status.includes("OK");
 
-                  const status = parts[6];
-                  const isPending = status.includes("PENDING");
-                  const isFailed = status.includes("FAILED");
-                  const isSuccess = status.includes("OK");
-
-                  return (
-                    <tr key={i} className={`hover:bg-primary/5 transition-colors ${isPending ? 'bg-primary/5' : ''}`}>
-                      <td className="px-3 py-1.5 border-r border-border text-text-muted">{parts[0]}</td>
-                      <td className="px-3 py-1.5 border-r border-border font-medium">{parts[1]}</td>
-                      <td className="px-3 py-1.5 border-r border-border">
-                        <span className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border text-[10px] uppercase font-bold">
-                          {parts[2]}
-                        </span>
-                      </td>
-                      <td className="px-3 py-1.5 border-r border-border truncate max-w-[150px]" title={parts[3]}>{parts[3]}</td>
-                      <td className="px-3 py-1.5 border-r border-border text-right text-primary">{parts[4]}</td>
-                      <td className="px-3 py-1.5 border-r border-border text-right text-success">{parts[5]}</td>
-                      <td className={`px-3 py-1.5 font-bold ${isSuccess ? 'text-success' :
-                          isFailed ? 'text-error' :
-                            'text-primary animate-pulse'
-                        }`}>
-                        {status}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    return (
+                      <tr key={i} className={cn("hover:bg-muted transition-colors", isPending && "bg-primary/5 animate-pulse")}>
+                        <td className="px-4 py-2.5 text-muted-foreground opacity-60">{parts[0]}</td>
+                        <td className="px-4 py-2.5 font-bold text-foreground">{parts[1]}</td>
+                        <td className="px-4 py-2.5 text-center">
+                          <Badge variant="outline" className="h-4 text-[8px] font-black uppercase bg-muted/50 border-border text-muted-foreground">{parts[2]}</Badge>
+                        </td>
+                        <td className="px-4 py-2.5 truncate max-w-[180px] text-muted-foreground" title={parts[3]}>{parts[3]}</td>
+                        <td className="px-4 py-2.5 text-right font-bold text-primary opacity-80">{parts[4]}</td>
+                        <td className="px-4 py-2.5 text-right font-bold text-emerald-500 opacity-80">{parts[5]}</td>
+                        <td className={cn("px-4 py-2.5 font-black uppercase tracking-tighter text-[10px]", isSuccess ? "text-emerald-500" : isFailed ? "text-destructive" : "text-primary")}>
+                          {status}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        </CardContent>
       </Card>
-      <div className="text-[10px] text-text-muted italic">
-        Logs are saved to log.txt in the application data directory.
+      <div className="flex items-center gap-2 px-2 text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-30">
+        <Info className="size-2.5" /> Persistent storage: application_data/log.txt
       </div>
     </div>
   );

@@ -1,8 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, Badge, Modal, Input, ModelSelectModal } from "@/shared/components";
-import Image from "next/image";
+import { 
+  Button, 
+  Input, 
+  ModelSelectModal,
+  Tooltip
+} from "@/shared/components";
+import { BaseToolCard } from "./";
+import { 
+  RotateCcw, 
+  CheckCircle2, 
+  Circle, 
+  ArrowRight, 
+  StopCircle, 
+  PlayCircle, 
+  AlertTriangle, 
+  AlertCircle, 
+  X, 
+  Save,
+  Loader2,
+  ShieldAlert,
+  Info
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function AntigravityToolCard({
   tool,
@@ -55,7 +76,6 @@ export default function AntigravityToolCard({
       if (res.ok) {
         const data = await res.json();
         const aliases = data.aliases || {};
-
         if (Object.keys(aliases).length > 0) {
           setModelMappings(aliases);
         }
@@ -88,7 +108,6 @@ export default function AntigravityToolCard({
     }
   };
 
-  // Windows uses UAC dialog, no sudo needed
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent?.includes("Windows");
 
   const handleStart = () => {
@@ -112,7 +131,6 @@ export default function AntigravityToolCard({
   const doStart = async (password) => {
     setLoading(true);
     setMessage(null);
-    // Show steps progressing in order
     setStartingStep("cert");
     try {
       const keyToUse = selectedApiKey?.trim()
@@ -128,13 +146,13 @@ export default function AntigravityToolCard({
       const data = await res.json();
       if (res.ok) {
         setStartingStep(null);
-        setMessage({ type: "success", text: "MITM started" });
+        setMessage({ type: "success", text: "Đã khởi động MITM thành công!" });
         setShowPasswordModal(false);
         setSudoPassword("");
         fetchStatus();
       } else {
         setStartingStep(null);
-        setMessage({ type: "error", text: data.error || "Failed to start" });
+        setMessage({ type: "error", text: data.error || "Không thể khởi động" });
       }
     } catch (error) {
       setStartingStep(null);
@@ -156,12 +174,12 @@ export default function AntigravityToolCard({
 
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "MITM stopped" });
+        setMessage({ type: "success", text: "Đã dừng MITM!" });
         setShowPasswordModal(false);
         setSudoPassword("");
         fetchStatus();
       } else {
-        setMessage({ type: "error", text: data.error || "Failed to stop" });
+        setMessage({ type: "error", text: data.error || "Không thể dừng" });
       }
     } catch (error) {
       setMessage({ type: "error", text: error.message });
@@ -172,7 +190,7 @@ export default function AntigravityToolCard({
 
   const handleConfirmPassword = () => {
     if (!sudoPassword.trim()) {
-      setMessage({ type: "error", text: "Sudo password is required" });
+      setMessage({ type: "error", text: "Mật khẩu sudo là bắt buộc" });
       return;
     }
     if (status?.running) {
@@ -206,7 +224,6 @@ export default function AntigravityToolCard({
   const handleSaveMappings = async () => {
     setLoading(true);
     setMessage(null);
-
     try {
       const res = await fetch("/api/cli-tools/antigravity-mitm/alias", {
         method: "PUT",
@@ -216,10 +233,10 @@ export default function AntigravityToolCard({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to save mappings");
+        throw new Error(data.error || "Lỗi khi lưu ánh xạ");
       }
 
-      setMessage({ type: "success", text: "Mappings saved!" });
+      setMessage({ type: "success", text: "Đã lưu ánh xạ thành công!" });
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -230,240 +247,235 @@ export default function AntigravityToolCard({
   const isRunning = status?.running;
 
   return (
-    <Card padding="xs" className="overflow-hidden">
-      <div className="flex items-center justify-between hover:cursor-pointer" onClick={onToggle}>
-        <div className="flex items-center gap-3">
-          <div className="size-8 flex items-center justify-center shrink-0">
-            <Image
-              src="/providers/antigravity.png"
-              alt={tool.name}
-              width={32}
-              height={32}
-              className="size-8 object-contain rounded-lg"
-              sizes="32px"
-              onError={(e) => { e.target.style.display = "none"; }}
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-sm">{tool.name}</h3>
-              {isRunning ? (
-                <Badge variant="success" size="sm">Active</Badge>
-              ) : (
-                <Badge variant="default" size="sm">Inactive</Badge>
-              )}
-            </div>
-            <p className="text-xs text-text-muted truncate">{tool.description}</p>
-          </div>
-        </div>
-        <span className={`material-symbols-outlined text-text-muted text-[20px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>expand_more</span>
-      </div>
-
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-4">
-          {/* Status indicators — ordered: Cert → Server → DNS */}
-          <div className="flex items-center gap-1">
+    <>
+      <BaseToolCard
+        tool={tool}
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+        status={isRunning ? "configured" : "not_configured"}
+        checking={loading && !startingStep}
+        applying={loading && startingStep === null}
+        restoring={false}
+        message={message}
+        onApply={handleSaveMappings}
+        onReset={() => isRunning ? handleStop() : null}
+        onCheckStatus={fetchStatus}
+        hasActiveProviders={hasActiveProviders}
+      >
+        <div className="space-y-6">
+          {/* Status Indicators */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 bg-muted/20 rounded-xl border border-border/50">
             {[
-              { key: "cert", label: "Cert", ok: status?.certExists },
+              { key: "cert", label: "Chứng chỉ", ok: status?.certExists },
               { key: "server", label: "Server", ok: status?.running },
               { key: "dns", label: "DNS", ok: status?.dnsConfigured },
             ].map(({ key, label, ok }, i) => {
               const isLoading = startingStep === key;
               return (
-                <div key={key} className="flex items-center">
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md">
+                <div key={key} className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {isLoading ? (
-                      <span className="material-symbols-outlined text-[14px] text-primary animate-spin">progress_activity</span>
+                      <Loader2 className="size-3.5 text-primary animate-spin" />
+                    ) : ok ? (
+                      <CheckCircle2 className="size-3.5 text-emerald-500" />
                     ) : (
-                      <span className={`material-symbols-outlined text-[14px] ${ok ? "text-green-500" : "text-text-muted"}`}>
-                        {ok ? "check_circle" : "radio_button_unchecked"}
-                      </span>
+                      <Circle className="size-3.5 text-muted-foreground" />
                     )}
-                    <span className={`text-xs font-medium ${isLoading ? "text-primary" : ok ? "text-green-500" : "text-text-muted"}`}>
+                    <span className={cn(
+                      "text-xs font-bold",
+                      isLoading ? "text-primary" : ok ? "text-emerald-500" : "text-muted-foreground"
+                    )}>
                       {label}
                     </span>
                   </div>
-                  {i < 2 && <span className="material-symbols-outlined text-[12px] text-text-muted">arrow_forward</span>}
+                  {i < 2 && <ArrowRight className="size-3 text-muted-foreground/30" />}
                 </div>
               );
             })}
           </div>
 
-          {/* Start/Stop Button */}
-          <div className="flex items-center gap-2">
-            {isRunning ? (
-              <button
-                onClick={handleStop}
-                disabled={loading}
-                className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 font-medium text-sm flex items-center gap-2 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">stop_circle</span>
-                Stop MITM
-              </button>
-            ) : (
-              <button
-                onClick={handleStart}
-                disabled={loading || !hasActiveProviders}
-                className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary font-medium text-sm flex items-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="material-symbols-outlined text-[18px]">play_circle</span>
-                Start MITM
-              </button>
+          {/* Control Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                Điều khiển MITM
+              </label>
+              {isRunning ? (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={handleStop} 
+                  disabled={loading}
+                  className="h-8 font-bold"
+                >
+                  <StopCircle className="mr-2 size-3.5" />
+                  Dừng MITM
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={handleStart} 
+                  disabled={loading || !hasActiveProviders}
+                  className="h-8 font-bold"
+                >
+                  <PlayCircle className="mr-2 size-3.5" />
+                  Khởi động MITM
+                </Button>
+              )}
+            </div>
+
+            {isWindows && !isRunning && (
+              <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <ShieldAlert className="text-amber-500 size-5 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <span className="font-bold">Windows:</span> Vui lòng chạy Terminal (8Router) với quyền Administrator để kích hoạt MITM.
+                </p>
+              </div>
+            )}
+
+            {!isRunning && (
+              <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
+                  <Info className="size-3.5" />
+                  Cách thức hoạt động
+                </div>
+                <ul className="space-y-2">
+                  <li className="text-[11px] text-muted-foreground flex items-start gap-2">
+                    <div className="size-1.5 rounded-full bg-primary/50 mt-1 shrink-0" />
+                    Tạo chứng chỉ SSL và thêm vào hệ thống (Trust Store).
+                  </li>
+                  <li className="text-[11px] text-muted-foreground flex items-start gap-2">
+                    <div className="size-1.5 rounded-full bg-primary/50 mt-1 shrink-0" />
+                    Điều hướng <code className="px-1 bg-muted rounded border">daily-cloudcode-pa.googleapis.com</code> về localhost.
+                  </li>
+                  <li className="text-[11px] text-muted-foreground flex items-start gap-2">
+                    <div className="size-1.5 rounded-full bg-primary/50 mt-1 shrink-0" />
+                    Ánh xạ các model Antigravity sang bất kỳ provider nào qua 8Router.
+                  </li>
+                </ul>
+              </div>
             )}
           </div>
 
-          {message?.type === "error" && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600">
-              <span className="material-symbols-outlined text-[14px]">error</span>
-              <span>{message.text}</span>
-            </div>
-          )}
-
-          {/* When running: API Key + Model Mappings */}
+          {/* Model Mappings */}
           {isRunning && (
-            <>
-              <div className="flex items-center gap-2">
-                <span className="w-32 shrink-0 text-sm font-semibold text-text-main text-right">API Key</span>
-                <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
-                {apiKeys.length > 0 ? (
-                  <select
-                    value={selectedApiKey}
-                    onChange={(e) => setSelectedApiKey(e.target.value)}
-                    className="flex-1 px-2 py-1.5 bg-surface rounded text-xs border border-border focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  >
-                    {apiKeys.map((key) => <option key={key.id} value={key.key}>{key.key}</option>)}
-                  </select>
-                ) : (
-                  <span className="flex-1 text-xs text-text-muted px-2 py-1.5">
-                    {cloudEnabled ? "No API keys - Create one in Keys page" : "sk_8router (default)"}
-                  </span>
-                )}
-              </div>
-
-              {tool.defaultModels.map((model) => (
-                <div key={model.alias} className="flex items-center gap-2">
-                  <span className="w-32 shrink-0 text-sm font-semibold text-text-main text-right">{model.name}</span>
-                  <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
-                  <input
-                    type="text"
-                    value={modelMappings[model.alias] || ""}
-                    onChange={(e) => handleModelMappingChange(model.alias, e.target.value)}
-                    placeholder="provider/model-id"
-                    className="flex-1 px-2 py-1.5 bg-surface rounded border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                  <button
-                    onClick={() => openModelSelector(model.alias)}
-                    disabled={!hasActiveProviders}
-                    className={`px-2 py-1.5 rounded border text-xs transition-colors shrink-0 whitespace-nowrap ${hasActiveProviders ? "bg-surface border-border text-text-main hover:border-primary cursor-pointer" : "opacity-50 cursor-not-allowed border-border"}`}
-                  >
-                    Select
-                  </button>
-                  {modelMappings[model.alias] && (
-                    <button
-                      onClick={() => handleModelMappingChange(model.alias, "")}
-                      className="p-1 text-text-muted hover:text-red-500 rounded transition-colors"
-                      title="Clear"
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <div className="grid grid-cols-1 gap-4">
+                {/* API Key */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                    API Key
+                  </label>
+                  {apiKeys?.length > 0 ? (
+                    <select 
+                      value={selectedApiKey} 
+                      onChange={(e) => setSelectedApiKey(e.target.value)} 
+                      className="w-full h-9 px-3 py-1 bg-background border border-input rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
                     >
-                      <span className="material-symbols-outlined text-[14px]">close</span>
-                    </button>
+                      {apiKeys.map((key) => <option key={key.id} value={key.key}>{key.key}</option>)}
+                    </select>
+                  ) : (
+                    <div className="h-9 flex items-center px-3 bg-muted/20 border border-border rounded-md text-xs text-muted-foreground">
+                      {cloudEnabled ? "Chưa có API key" : "sk_8router (Mặc định)"}
+                    </div>
                   )}
                 </div>
-              ))}
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleSaveMappings}
-                  disabled={loading || Object.keys(modelMappings).length === 0}
-                >
-                  <span className="material-symbols-outlined text-[14px] mr-1">save</span>
-                  Save Mappings
-                </Button>
+                {/* Model Mappings */}
+                {tool.defaultModels.map((model) => (
+                  <div key={model.alias} className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 truncate block" title={model.name}>
+                      {model.name}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        value={modelMappings[model.alias] || ""} 
+                        onChange={(e) => handleModelMappingChange(model.alias, e.target.value)} 
+                        placeholder="provider/model-id" 
+                        className="h-9 text-xs flex-1"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => openModelSelector(model.alias)} 
+                        disabled={!hasActiveProviders}
+                        className="h-9 px-3 shrink-0 font-semibold"
+                      >
+                        Chọn Model
+                      </Button>
+                      {modelMappings[model.alias] && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm" 
+                          onClick={() => handleModelMappingChange(model.alias, "")} 
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </>
-          )}
-
-          {/* Windows admin warning */}
-          {!isRunning && isWindows && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
-              <span className="material-symbols-outlined text-[14px]">warning</span>
-              <span>Windows: Run terminal (8Router) as Administrator to enable MITM</span>
             </div>
           )}
+        </div>
+      </BaseToolCard>
 
-          {/* When stopped: how it works */}
-          {!isRunning && (
-            <div className="flex flex-col gap-1.5 px-1">
-              <p className="text-xs text-text-muted">
-                <span className="font-medium text-text-main">How it works:</span> Intercepts Antigravity traffic via DNS redirect, letting you reroute models through 8Router.
+      {/* Sudo Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-5">
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold">Yêu cầu mật khẩu Sudo</h3>
+              <p className="text-xs text-muted-foreground">Cần quyền admin để cấu hình chứng chỉ SSL và DNS hệ thống.</p>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <ShieldAlert className="text-amber-500 size-5 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                Mật khẩu này chỉ được sử dụng để thực thi lệnh hệ thống và không được lưu trữ.
               </p>
-              <div className="flex flex-col gap-0.5 text-[11px] text-text-muted">
-                <span>1. Generates SSL cert & adds to system keychain</span>
-                <span>2. Redirects <code className="text-[10px] bg-surface px-1 rounded">daily-cloudcode-pa.googleapis.com</code> → localhost</span>
-                <span>3. Maps Antigravity models to any provider via 8Router</span>
-              </div>
             </div>
-          )}
+
+            <Input
+              type="password"
+              placeholder="Nhập mật khẩu sudo"
+              value={sudoPassword}
+              onChange={(e) => setSudoPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !loading) handleConfirmPassword();
+              }}
+              className="h-10"
+              autoFocus
+            />
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setMessage(null); }}
+                disabled={loading}
+                className="font-bold"
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleConfirmPassword}
+                disabled={loading || !sudoPassword.trim()}
+                loading={loading}
+                className="font-bold min-w-[100px]"
+              >
+                Xác nhận
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Password Modal */}
-      <Modal
-        isOpen={showPasswordModal}
-        onClose={() => {
-          setShowPasswordModal(false);
-          setSudoPassword("");
-          setMessage(null);
-        }}
-        title="Sudo Password Required"
-        size="sm"
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <span className="material-symbols-outlined text-yellow-500 text-[20px]">warning</span>
-            <p className="text-xs text-text-muted">Required for SSL certificate and DNS configuration</p>
-          </div>
-
-          <Input
-            type="password"
-            placeholder="Enter sudo password"
-            value={sudoPassword}
-            onChange={(e) => setSudoPassword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !loading) handleConfirmPassword();
-            }}
-          />
-
-          {message && (
-            <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${message.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
-              <span className="material-symbols-outlined text-[14px]">{message.type === "success" ? "check_circle" : "error"}</span>
-              <span>{message.text}</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setShowPasswordModal(false); setSudoPassword(""); setMessage(null); }}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleConfirmPassword}
-              loading={loading}
-            >
-              Confirm
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Model Select Modal */}
       <ModelSelectModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -471,8 +483,8 @@ export default function AntigravityToolCard({
         selectedModel={currentEditingAlias ? modelMappings[currentEditingAlias] : null}
         activeProviders={activeProviders}
         modelAliases={modelAliases}
-        title={`Select model for ${currentEditingAlias}`}
+        title={`Chọn model cho ${currentEditingAlias}`}
       />
-    </Card>
+    </>
   );
 }

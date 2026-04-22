@@ -1,46 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import Modal from "./Modal";
-import Button from "./Button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Copy, Check, FileCode } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function ManualConfigModal({ isOpen, onClose, title = "Manual Configuration", configs = [] }) {
   const [copiedIndex, setCopiedIndex] = useState(null);
-
   const copyToClipboard = async (text, index) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
-      console.log("Failed to copy:", err);
-    }
+    } catch (err) { console.log(err); }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
-      <div className="flex flex-col gap-4">
-        {configs.map((config, index) => (
-          <div key={index} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-text-main">{config.filename}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(config.content, index)}
-              >
-                <span className="material-symbols-outlined text-[14px] mr-1">
-                  {copiedIndex === index ? "check" : "content_copy"}
-                </span>
-                {copiedIndex === index ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-            <pre className="px-3 py-2 bg-black/5 dark:bg-white/5 rounded font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all max-h-60 overflow-y-auto border border-border">
-              {config.content}
-            </pre>
-          </div>
-        ))}
-      </div>
-    </Modal>
+    <Dialog open={isOpen} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+             <FileCode className="size-5 text-primary" />
+             {title}
+          </DialogTitle>
+          <DialogDescription>Manual system configuration for infrastructure integration.</DialogDescription>
+        </DialogHeader>
+        
+        <ScrollArea className="max-h-[60vh] pr-4">
+           <div className="space-y-6 py-2">
+             {configs.map((config, index) => (
+               <div key={index} className="space-y-2">
+                 <div className="flex items-center justify-between px-1">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{config.filename}</span>
+                   <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => copyToClipboard(config.content, index)}>
+                      {copiedIndex === index ? <Check className="size-3 mr-1.5 text-emerald-500" /> : <Copy className="size-3 mr-1.5" />}
+                      {copiedIndex === index ? "Copied" : "Copy Source"}
+                   </Button>
+                 </div>
+                 <pre className="p-4 rounded-xl bg-muted/40 border border-border font-mono text-[11px] leading-relaxed text-foreground/80 overflow-auto whitespace-pre-wrap break-all">
+                   {config.content}
+                 </pre>
+               </div>
+             ))}
+           </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }

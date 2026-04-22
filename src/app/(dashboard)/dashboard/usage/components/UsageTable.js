@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import PropTypes from "prop-types";
-import Card from "@/shared/components/Card";
-import Badge from "@/shared/components/Badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const fmt = (n) => new Intl.NumberFormat().format(n || 0);
 const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
@@ -18,8 +20,10 @@ function fmtTime(iso) {
 }
 
 function SortIcon({ field, currentSort, currentOrder }) {
-  if (currentSort !== field) return <span className="ml-1 opacity-20">↕</span>;
-  return <span className="ml-1">{currentOrder === "asc" ? "↑" : "↓"}</span>;
+  if (currentSort !== field) return <ArrowUpDown className="size-3 ml-1 opacity-20 inline" />;
+  return currentOrder === "asc" 
+    ? <ArrowUp className="size-3 ml-1 inline text-primary" /> 
+    : <ArrowDown className="size-3 ml-1 inline text-primary" />;
 }
 
 SortIcon.propTypes = {
@@ -35,13 +39,13 @@ function ValueCells({ item, viewMode, isSummary = false }) {
   if (viewMode === "tokens") {
     return (
       <>
-        <td className="px-6 py-3 text-right text-text-muted">
+        <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
           {isSummary && item.promptTokens === undefined ? "—" : fmt(item.promptTokens)}
         </td>
-        <td className="px-6 py-3 text-right text-text-muted">
+        <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
           {isSummary && item.completionTokens === undefined ? "—" : fmt(item.completionTokens)}
         </td>
-        <td className="px-6 py-3 text-right font-medium">
+        <td className="px-4 py-3 text-right font-bold tabular-nums">
           {fmt(item.totalTokens)}
         </td>
       </>
@@ -49,13 +53,13 @@ function ValueCells({ item, viewMode, isSummary = false }) {
   }
   return (
     <>
-      <td className="px-6 py-3 text-right text-text-muted">
+      <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
         {isSummary && item.inputCost === undefined ? "—" : fmtCost(item.inputCost)}
       </td>
-      <td className="px-6 py-3 text-right text-text-muted">
+      <td className="px-4 py-3 text-right text-muted-foreground font-medium tabular-nums">
         {isSummary && item.outputCost === undefined ? "—" : fmtCost(item.outputCost)}
       </td>
-      <td className="px-6 py-3 text-right font-medium text-warning">
+      <td className="px-4 py-3 text-right font-bold text-amber-500 tabular-nums">
         {fmtCost(item.totalCost || item.cost)}
       </td>
     </>
@@ -147,32 +151,41 @@ export default function UsageTable({
   const totalColSpan = columns.length + valueColumns.length;
 
   return (
-    <Card className="overflow-hidden">
-      <div className="p-4 border-b border-border bg-bg-subtle/50">
-        <h3 className="font-semibold">{title}</h3>
-      </div>
+    <Card className="shadow-none border-border overflow-hidden">
+      <CardHeader className="p-4 border-b border-border bg-muted/30">
+        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </CardTitle>
+      </CardHeader>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-bg-subtle/30 text-text-muted uppercase text-xs">
+          <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.field}
-                  className={`px-6 py-3 cursor-pointer hover:bg-bg-subtle/50 ${col.align === "right" ? "text-right" : ""}`}
+                  className={cn(
+                    "px-4 py-3 cursor-pointer hover:bg-muted transition-colors",
+                    col.align === "right" ? "text-right" : ""
+                  )}
                   onClick={() => onToggleSort(tableType, col.field)}
                 >
-                  {col.label}{" "}
-                  <SortIcon field={col.field} currentSort={sortBy} currentOrder={sortOrder} />
+                  <div className={cn("flex items-center gap-1", col.align === "right" && "justify-end")}>
+                    {col.label}
+                    <SortIcon field={col.field} currentSort={sortBy} currentOrder={sortOrder} />
+                  </div>
                 </th>
               ))}
               {valueColumns.map((col) => (
                 <th
                   key={col.field}
-                  className="px-6 py-3 text-right cursor-pointer hover:bg-bg-subtle/50"
+                  className="px-4 py-3 text-right cursor-pointer hover:bg-muted transition-colors"
                   onClick={() => onToggleSort(tableType, col.field)}
                 >
-                  {col.label}{" "}
-                  <SortIcon field={col.field} currentSort={sortBy} currentOrder={sortOrder} />
+                  <div className="flex items-center justify-end gap-1">
+                    {col.label}
+                    <SortIcon field={col.field} currentSort={sortBy} currentOrder={sortOrder} />
+                  </div>
                 </th>
               ))}
             </tr>
@@ -182,15 +195,19 @@ export default function UsageTable({
               <Fragment key={group.groupKey}>
                 {/* Group summary row */}
                 <tr
-                  className="group-summary cursor-pointer hover:bg-bg-subtle/50 transition-colors"
+                  className="group-summary cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => toggleGroup(group.groupKey)}
                 >
-                  <td className="px-6 py-3">
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[18px] text-text-muted transition-transform ${expanded.has(group.groupKey) ? "rotate-90" : ""}`}>
-                        chevron_right
-                      </span>
-                      <span className={`font-medium transition-colors ${group.summary.pending > 0 ? "text-primary" : ""}`}>
+                      <ChevronRight className={cn(
+                        "size-4 text-muted-foreground transition-transform",
+                        expanded.has(group.groupKey) && "rotate-90"
+                      )} />
+                      <span className={cn(
+                        "font-semibold",
+                        group.summary.pending > 0 && "text-primary"
+                      )}>
                         {group.groupKey}
                       </span>
                     </div>
@@ -202,7 +219,7 @@ export default function UsageTable({
                 {expanded.has(group.groupKey) && group.items.map((item) => (
                   <tr
                     key={`detail-${item.key}`}
-                    className="group-detail hover:bg-bg-subtle/20 transition-colors"
+                    className="group-detail bg-muted/5 hover:bg-muted/20 transition-colors"
                   >
                     {renderDetailCells(item)}
                     <ValueCells item={item} viewMode={viewMode} />
@@ -212,7 +229,7 @@ export default function UsageTable({
             ))}
             {groupedData.length === 0 && (
               <tr>
-                <td colSpan={totalColSpan} className="px-6 py-8 text-center text-text-muted">
+                <td colSpan={totalColSpan} className="px-4 py-12 text-center text-muted-foreground font-bold uppercase text-[10px] tracking-widest">
                   {emptyMessage}
                 </td>
               </tr>

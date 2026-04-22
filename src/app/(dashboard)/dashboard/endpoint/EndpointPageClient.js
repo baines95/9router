@@ -2,18 +2,74 @@
 
 import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import { Card, Button, Input, Modal, CardSkeleton, Toggle } from "@/shared/components";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Copy, 
+  Check, 
+  Power, 
+  Loader2, 
+  AlertCircle, 
+  CloudUpload, 
+  Shield, 
+  Plus, 
+  Key, 
+  Eye, 
+  EyeOff, 
+  Trash2, 
+  AlertTriangle, 
+  CheckCircle2, 
+  HelpCircle, 
+  Globe, 
+  Users, 
+  Code2, 
+  Lock,
+  ExternalLink,
+  Activity,
+  Zap,
+  Terminal,
+  Server,
+  Network,
+  Settings2,
+  ChevronRight
+} from "lucide-react";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
+import { cn } from "@/lib/utils";
 
 const TUNNEL_BENEFITS = [
-  { icon: "public", title: "Access Anywhere", desc: "Use your API from any network" },
-  { icon: "group", title: "Share Endpoint", desc: "Share URL with team members" },
-  { icon: "code", title: "Use in Cursor/Cline", desc: "Connect AI tools remotely" },
-  { icon: "lock", title: "Encrypted", desc: "End-to-end TLS via Cloudflare" },
+  { icon: Globe, title: "Access Anywhere", desc: "Use your API from any network" },
+  { icon: Users, title: "Share Endpoint", desc: "Share URL with team members" },
+  { icon: Code2, title: "Use in Cursor/Cline", desc: "Connect AI tools remotely" },
+  { icon: Lock, title: "Encrypted", desc: "End-to-end TLS via Cloudflare" },
 ];
 
-const TUNNEL_PING_INTERVAL_MS = 2000;
-const TUNNEL_PING_MAX_MS = 300000;
 export default function APIPageClient({ machineId }) {
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,1185 +79,307 @@ export default function APIPageClient({ machineId }) {
 
   const [requireApiKey, setRequireApiKey] = useState(false);
   const [requireLogin, setRequireLogin] = useState(true);
-  const [hasPassword, setHasPassword] = useState(true);
   const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
 
-  // Cloudflare Tunnel state
-  const [tunnelChecking, setTunnelChecking] = useState(true);
   const [tunnelEnabled, setTunnelEnabled] = useState(false);
   const [tunnelUrl, setTunnelUrl] = useState("");
   const [tunnelPublicUrl, setTunnelPublicUrl] = useState("");
   const [tunnelLoading, setTunnelLoading] = useState(false);
-  const [tunnelProgress, setTunnelProgress] = useState("");
-  const [tunnelStatus, setTunnelStatus] = useState(null);
   const [showEnableTunnelModal, setShowEnableTunnelModal] = useState(false);
   const [showDisableTunnelModal, setShowDisableTunnelModal] = useState(false);
 
-  // Tailscale state
   const [tsEnabled, setTsEnabled] = useState(false);
   const [tsUrl, setTsUrl] = useState("");
   const [tsLoading, setTsLoading] = useState(false);
-  const [tsProgress, setTsProgress] = useState("");
-  const [tsStatus, setTsStatus] = useState(null);
-  const [tsInstalled, setTsInstalled] = useState(null); // null=checking, true/false
-  const [tsInstalling, setTsInstalling] = useState(false);
-  const [tsInstallLog, setTsInstallLog] = useState([]);
-  const [tsSudoPassword, setTsSudoPassword] = useState("");
-  const [tsConnecting, setTsConnecting] = useState(false);
+  const [tsInstalled, setTsInstalled] = useState(null);
   const [showTsModal, setShowTsModal] = useState(false);
   const [showDisableTsModal, setShowDisableTsModal] = useState(false);
-  const tsLogRef = useRef(null);
 
-  // API key visibility toggle state
   const [visibleKeys, setVisibleKeys] = useState(new Set());
-
   const { copied, copy } = useCopyToClipboard();
 
-  // Auto-scroll install log
-  useEffect(() => {
-    if (tsLogRef.current) tsLogRef.current.scrollTop = tsLogRef.current.scrollHeight;
-  }, [tsInstallLog]);
-
-  useEffect(() => {
-    fetchData();
-    loadSettings();
-  }, []);
+  useEffect(() => { fetchData(); loadSettings(); }, []);
 
   const loadSettings = async () => {
-    setTunnelChecking(true);
     try {
-      const [settingsRes, statusRes] = await Promise.all([
-        fetch("/api/settings"),
-        fetch("/api/tunnel/status")
-      ]);
+      const [settingsRes, statusRes] = await Promise.all([fetch("/api/settings"), fetch("/api/tunnel/status")]);
       if (settingsRes.ok) {
         const data = await settingsRes.json();
         setRequireApiKey(data.requireApiKey || false);
         setRequireLogin(data.requireLogin !== false);
-        setHasPassword(data.hasPassword || false);
         setTunnelDashboardAccess(data.tunnelDashboardAccess || false);
       }
       if (statusRes.ok) {
         const data = await statusRes.json();
-        const tEnabled = data.tunnel?.enabled || false;
-        const tUrl = data.tunnel?.tunnelUrl || "";
-        const tPublicUrl = data.tunnel?.publicUrl || "";
-        setTunnelUrl(tUrl);
-        setTunnelPublicUrl(tPublicUrl);
-        const tsEn = data.tailscale?.enabled || false;
-        const tsUrlVal = data.tailscale?.tunnelUrl || "";
-        setTsUrl(tsUrlVal);
-
-        if (tsEn && tsUrlVal) {
-          setTsLoading(true);
-          setTsProgress("Checking Tailscale...");
-          const tsHealthUrl = `${tsUrlVal}/api/health`;
-          try {
-            const tsPing = await fetch(tsHealthUrl, { mode: "no-cors", cache: "no-store" });
-            if (tsPing.ok || tsPing.type === "opaque") {
-              setTsEnabled(true);
-            } else {
-              const ok = await pingTsHealth(tsUrlVal);
-              setTsEnabled(ok);
-              if (!ok) setTsStatus({ type: "warning", message: "Tailscale not reachable." });
-            }
-          } catch {
-            const ok = await pingTsHealth(tsUrlVal);
-            setTsEnabled(ok);
-            if (!ok) setTsStatus({ type: "warning", message: "Tailscale not reachable." });
-          } finally {
-            setTsLoading(false);
-            setTsProgress("");
-          }
-        } else {
-          setTsEnabled(tsEn);
-        }
-
-        if (tEnabled && (tPublicUrl || tUrl)) {
-          // Ping once to verify reachable
-          const healthUrl = `${tPublicUrl || tUrl}/api/health`;
-          try {
-            const ping = await fetch(healthUrl, { cache: "no-store" });
-            if (ping.ok) {
-              setTunnelEnabled(true);
-            } else {
-              pingTunnelHealth(tPublicUrl || tUrl);
-            }
-          } catch {
-            pingTunnelHealth(tPublicUrl || tUrl);
-          }
-        } else {
-          setTunnelEnabled(tEnabled);
-        }
+        setTunnelUrl(data.tunnel?.tunnelUrl || "");
+        setTunnelPublicUrl(data.tunnel?.publicUrl || "");
+        setTsUrl(data.tailscale?.tunnelUrl || "");
+        setTsEnabled(data.tailscale?.enabled || false);
+        setTunnelEnabled(data.tunnel?.enabled || false);
       }
-    } catch (error) {
-      console.log("Error loading settings:", error);
-    } finally {
-      setTunnelChecking(false);
-    }
-  };
-
-  const handleTunnelDashboardAccess = async (value) => {
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tunnelDashboardAccess: value }),
-      });
-      if (res.ok) setTunnelDashboardAccess(value);
-    } catch (error) {
-      console.log("Error updating tunnelDashboardAccess:", error);
-    }
+    } catch (e) { console.log(e); } finally { setLoading(false); }
   };
 
   const handleRequireApiKey = async (value) => {
     try {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requireApiKey: value }),
-      });
+      const res = await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requireApiKey: value }) });
       if (res.ok) setRequireApiKey(value);
-    } catch (error) {
-      console.log("Error updating requireApiKey:", error);
-    }
+    } catch (e) { console.log(e); }
   };
 
   const fetchData = async () => {
     try {
-      const keysRes = await fetch("/api/keys");
-      const keysData = await keysRes.json();
-      if (keysRes.ok) {
-        setKeys(keysData.keys || []);
-      }
-    } catch (error) {
-      console.log("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // u2500u2500u2500 Cloudflare Tunnel handlers
-  // Ping tunnel health until reachable, also check backend status to detect process die
-  const pingTunnelHealth = async (url) => {
-    setTunnelLoading(true);
-    setTunnelProgress("Waiting for tunnel ready...");
-    const healthUrl = `${url}/api/health`;
-    const start = Date.now();
-    while (Date.now() - start < TUNNEL_PING_MAX_MS) {
-      await new Promise((r) => setTimeout(r, TUNNEL_PING_INTERVAL_MS));
-      try {
-        const ping = await fetch(healthUrl, { mode: "no-cors", cache: "no-store" });
-        if (ping.ok || ping.type === "opaque") {
-          setTunnelEnabled(true);
-          setTunnelLoading(false);
-          setTunnelProgress("");
-          return true;
-        }
-      } catch { /* not ready yet */ }
-      // Every 5 pings (~10s), check if backend process still alive
-      if ((Date.now() - start) % 10000 < TUNNEL_PING_INTERVAL_MS) {
-        try {
-          const statusRes = await fetch("/api/tunnel/status");
-          if (statusRes.ok) {
-            const status = await statusRes.json();
-            if (!status.tunnel?.enabled) {
-              setTunnelStatus({ type: "error", message: "Tunnel process stopped unexpectedly." });
-              setTunnelLoading(false);
-              setTunnelProgress("");
-              return false;
-            }
-          }
-        } catch { /* ignore */ }
-      }
-    }
-    setTunnelStatus({ type: "error", message: "Tunnel created but not reachable. Please try again." });
-    setTunnelLoading(false);
-    setTunnelProgress("");
-    return false;
-  };
-
-  const handleEnableTunnel = async () => {
-    setShowEnableTunnelModal(false);
-    setTunnelLoading(true);
-    setTunnelStatus(null);
-    setTunnelProgress("Creating tunnel...");
-
-    // Poll download progress while enable request is pending
-    let polling = true;
-    const pollProgress = async () => {
-      while (polling) {
-        try {
-          const r = await fetch("/api/tunnel/status");
-          if (r.ok) {
-            const s = await r.json();
-            if (s.download?.downloading) {
-              setTunnelProgress(`Downloading cloudflared... ${s.download.progress}%`);
-            } else if (polling) {
-              setTunnelProgress("Creating tunnel...");
-            }
-          }
-        } catch { /* ignore */ }
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-    };
-    pollProgress();
-
-    try {
-      const res = await fetch("/api/tunnel/enable", { method: "POST" });
-      polling = false;
+      const res = await fetch("/api/keys");
       const data = await res.json();
-      if (!res.ok) {
-        setTunnelStatus({ type: "error", message: data.error || "Failed to enable tunnel" });
-        return;
-      }
-
-      const url = data.publicUrl || data.tunnelUrl;
-      if (!url) {
-        setTunnelStatus({ type: "error", message: "No tunnel URL returned" });
-        return;
-      }
-
-      setTunnelUrl(data.tunnelUrl || "");
-      setTunnelPublicUrl(data.publicUrl || "");
-      await pingTunnelHealth(url);
-    } catch (error) {
-      setTunnelStatus({ type: "error", message: error.message });
-    } finally {
-      polling = false;
-      setTunnelLoading(false);
-      setTunnelProgress("");
-    }
-  };
-
-  const handleDisableTunnel = async () => {
-    setTunnelLoading(true);
-    setTunnelStatus(null);
-    try {
-      const res = await fetch("/api/tunnel/disable", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setTunnelEnabled(false);
-        setTunnelUrl("");
-        setTunnelPublicUrl("");
-        setShowDisableTunnelModal(false);
-        setTunnelStatus({ type: "success", message: "Tunnel disabled" });
-      } else {
-        setTunnelStatus({ type: "error", message: data.error || "Failed to disable tunnel" });
-      }
-    } catch (error) {
-      setTunnelStatus({ type: "error", message: error.message });
-    } finally {
-      setTunnelLoading(false);
-    }
-  };
-
-  // u2500u2500u2500 Tailscale handlers
-  const checkTailscaleInstalled = async () => {
-    setTsInstalled(null);
-    try {
-      const res = await fetch("/api/tunnel/tailscale-check");
-      if (res.ok) {
-        const data = await res.json();
-        setTsInstalled(data.installed);
-        return data;
-      }
-    } catch { /* ignore */ }
-    setTsInstalled(false);
-    return { installed: false };
-  };
-
-  const handleInstallTailscale = async () => {
-    setTsInstalling(true);
-    setTsStatus(null);
-    setTsInstallLog([]);
-    try {
-      const res = await fetch("/api/tunnel/tailscale-install", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sudoPassword: tsSudoPassword }),
-      });
-      setTsSudoPassword("");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() || "";
-        for (const part of parts) {
-          const lines = part.split("\n");
-          let event = "progress";
-          let data = null;
-          for (const line of lines) {
-            if (line.startsWith("event: ")) event = line.slice(7).trim();
-            if (line.startsWith("data: ")) {
-              try { data = JSON.parse(line.slice(6)); } catch { /* skip */ }
-            }
-          }
-          if (!data) continue;
-          if (event === "progress") {
-            setTsInstallLog((prev) => [...prev.slice(-50), data.message]);
-          } else if (event === "done") {
-            setTsInstalled(true);
-            setTsInstalling(false);
-            return;
-          } else if (event === "error") {
-            setTsStatus({ type: "error", message: data.error || "Install failed" });
-          }
-        }
-      }
-    } catch (e) {
-      setTsStatus({ type: "error", message: e.message });
-    } finally {
-      setTsInstalling(false);
-    }
-  };
-
-  // Ping Tailscale health until reachable
-  const pingTsHealth = async (url) => {
-    setTsProgress("Waiting for Tailscale ready...");
-    const healthUrl = `${url}/api/health`;
-    const start = Date.now();
-    while (Date.now() - start < TUNNEL_PING_MAX_MS) {
-      await new Promise((r) => setTimeout(r, TUNNEL_PING_INTERVAL_MS));
-      try {
-        const ping = await fetch(healthUrl, { mode: "no-cors", cache: "no-store" });
-        if (ping.ok || ping.type === "opaque") return true;
-      } catch { /* not ready yet */ }
-    }
-    return false;
-  };
-
-  const handleConnectTailscale = async (preOpenedTab) => {
-    const tab = preOpenedTab || null;
-    setShowTsModal(false);
-    setTsConnecting(true);
-    setTsLoading(true);
-    setTsStatus(null);
-    setTsProgress("Connecting...");
-    try {
-      const res = await fetch("/api/tunnel/tailscale-enable", { method: "POST" });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        if (tab) tab.close();
-        setTsUrl(data.tunnelUrl || "");
-        const reachable = await pingTsHealth(data.tunnelUrl);
-        if (reachable) {
-          setTsEnabled(true);
-          setTsStatus(null);
-        } else {
-          setTsEnabled(true);
-          setTsStatus({ type: "warning", message: "Connected but not reachable yet." });
-        }
-        return;
-      }
-
-      // Needs login: redirect pre-opened tab or open new
-      if (data.needsLogin && data.authUrl) {
-        if (tab) tab.location.href = data.authUrl;
-        else window.open(data.authUrl, "tailscale_auth", "width=600,height=700");
-        setTsProgress("Waiting for login...");
-        for (let i = 0; i < 40; i++) {
-          await new Promise((r) => setTimeout(r, 3000));
-          try {
-            const r2 = await fetch("/api/tunnel/tailscale-check");
-            if (r2.ok) {
-              const check = await r2.json();
-              if (check.loggedIn) {
-                setTsProgress("Starting funnel...");
-                const res2 = await fetch("/api/tunnel/tailscale-enable", { method: "POST" });
-                const data2 = await res2.json();
-                if (res2.ok && data2.success) {
-                  if (tab) tab.close();
-                  setTsUrl(data2.tunnelUrl || "");
-                  const ok2 = await pingTsHealth(data2.tunnelUrl);
-                  if (ok2) {
-                    setTsEnabled(true);
-                    setTsStatus(null);
-                  } else {
-                    setTsEnabled(true);
-                    setTsStatus({ type: "warning", message: "Connected but not reachable yet." });
-                  }
-                } else if (data2.funnelNotEnabled && data2.enableUrl) {
-                  await pollFunnelEnable(data2.enableUrl, tab);
-                } else {
-                  setTsStatus({ type: "error", message: data2.error || "Failed to start funnel" });
-                }
-                return;
-              }
-            }
-          } catch { /* retry */ }
-        }
-        setTsStatus({ type: "error", message: "Login timed out. Please try again." });
-        return;
-      }
-
-      // Funnel not enabled: redirect pre-opened tab
-      if (data.funnelNotEnabled && data.enableUrl) {
-        await pollFunnelEnable(data.enableUrl, tab);
-        return;
-      }
-
-      if (tab) tab.close();
-      setTsStatus({ type: "error", message: data.error || "Failed to connect" });
-    } catch (error) {
-      if (tab) tab.close();
-      setTsStatus({ type: "error", message: error.message });
-    } finally {
-      setTsLoading(false);
-      setTsConnecting(false);
-      setTsProgress("");
-    }
-  };
-
-  const pollFunnelEnable = async (enableUrl, tab) => {
-    if (tab) tab.location.href = enableUrl;
-    else window.open(enableUrl, "tailscale_auth", "width=600,height=700");
-    setTsProgress("Enable Funnel in browser, waiting...");
-    for (let i = 0; i < 40; i++) {
-      await new Promise((r) => setTimeout(r, 3000));
-      try {
-        const res = await fetch("/api/tunnel/tailscale-enable", { method: "POST" });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          if (tab) tab.close();
-          setTsUrl(data.tunnelUrl || "");
-          const ok3 = await pingTsHealth(data.tunnelUrl);
-          if (ok3) {
-            setTsEnabled(true);
-            setTsStatus(null);
-          } else {
-            setTsEnabled(true);
-            setTsStatus({ type: "warning", message: "Connected but not reachable yet." });
-          }
-          return;
-        }
-        if (data.funnelNotEnabled) continue;
-        if (data.error) {
-          setTsStatus({ type: "error", message: data.error });
-          return;
-        }
-      } catch { /* retry */ }
-    }
-    setTsStatus({ type: "error", message: "Timed out waiting for Funnel to be enabled." });
-  };
-
-  const handleDisableTailscale = async () => {
-    setTsLoading(true);
-    setTsStatus(null);
-    try {
-      const res = await fetch("/api/tunnel/tailscale-disable", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setTsEnabled(false);
-        setTsUrl("");
-        setShowDisableTsModal(false);
-        setTsStatus({ type: "success", message: "Tailscale disabled" });
-      } else {
-        setTsStatus({ type: "error", message: data.error || "Failed to disable Tailscale" });
-      }
-    } catch (e) {
-      setTsStatus({ type: "error", message: e.message });
-    } finally {
-      setTsLoading(false);
-    }
-  };
-
-  const handleOpenTsModal = async () => {
-    setTsStatus(null);
-    setTsInstallLog([]);
-    setShowTsModal(true);
-    await checkTailscaleInstalled();
+      if (res.ok) setKeys(data.keys || []);
+    } catch (e) { console.log(e); }
   };
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) return;
-
     try {
-      const res = await fetch("/api/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newKeyName }),
-      });
+      const res = await fetch("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newKeyName }) });
       const data = await res.json();
-
-      if (res.ok) {
-        setCreatedKey(data.key);
-        await fetchData();
-        setNewKeyName("");
-        setShowAddModal(false);
-      }
-    } catch (error) {
-      console.log("Error creating key:", error);
-    }
+      if (res.ok) { setCreatedKey(data.key); await fetchData(); setNewKeyName(""); setShowAddModal(false); }
+    } catch (e) { console.log(e); }
   };
 
   const handleDeleteKey = async (id) => {
     if (!confirm("Delete this API key?")) return;
-
     try {
       const res = await fetch(`/api/keys/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setKeys(keys.filter((k) => k.id !== id));
-        // Clean up visibility state
-        setVisibleKeys(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    } catch (error) {
-      console.log("Error deleting key:", error);
-    }
+      if (res.ok) setKeys(prev => prev.filter(k => k.id !== id));
+    } catch (e) { console.log(e); }
   };
 
   const handleToggleKey = async (id, isActive) => {
     try {
-      const res = await fetch(`/api/keys/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive }),
-      });
-      if (res.ok) {
-        setKeys(prev => prev.map(k => k.id === id ? { ...k, isActive } : k));
-      }
-    } catch (error) {
-      console.log("Error toggling key:", error);
-    }
-  };
-
-  const maskKey = (fullKey) => {
-    if (!fullKey) return "";
-    return fullKey.length > 8 ? fullKey.slice(0, 8) + "..." : fullKey;
-  };
-
-  const toggleKeyVisibility = (keyId) => {
-    setVisibleKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(keyId)) next.delete(keyId);
-      else next.add(keyId);
-      return next;
-    });
+      const res = await fetch(`/api/keys/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive }) });
+      if (res.ok) setKeys(prev => prev.map(k => k.id === id ? { ...k, isActive } : k));
+    } catch (e) { console.log(e); }
   };
 
   const [baseUrl, setBaseUrl] = useState("/v1");
+  useEffect(() => { if (typeof window !== "undefined") setBaseUrl(`${window.location.origin}/v1`); }, []);
 
-  // Hydration fix: Only access window on client side
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setBaseUrl(`${window.location.origin}/v1`);
-    }
-  }, []);
+  if (loading) return <div className="flex flex-col gap-6 max-w-7xl mx-auto py-10 px-4"><Skeleton className="h-48 w-full rounded-xl" /><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><Skeleton className="h-64 w-full rounded-xl" /><Skeleton className="h-64 w-full rounded-xl" /><Skeleton className="h-64 w-full rounded-xl" /></div></div>;
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-8">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
-  }
+  const activePublicUrl = tunnelEnabled ? (tunnelPublicUrl || tunnelUrl) : tsEnabled ? tsUrl : null;
+  const currentPrimaryUrl = activePublicUrl ? `${activePublicUrl}/v1` : baseUrl;
 
-  const currentEndpoint = baseUrl;
+  const testCurl = `curl ${currentPrimaryUrl}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${keys[0]?.key || "YOUR_API_KEY"}" \\
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'`;
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Endpoint Card */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-4">API Endpoint</h2>
-
-        {/* Endpoint rows */}
-        <div className="flex flex-col gap-2">
-          {/* Local */}
-          <EndpointRow
-            label="Local"
-            url={currentEndpoint}
-            copyId="local_url"
-            copied={copied}
-            onCopy={copy}
-          />
-          {/* Cloudflare Tunnel */}
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-mono px-1.5 py-0.5 rounded shrink-0 min-w-[68px] text-center ${
-              tunnelEnabled ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" : "bg-sidebar text-text-muted"
-            }`}>Tunnel</span>
-            {tunnelEnabled && !tunnelLoading ? (
-              <>
-                <Input value={`${tunnelPublicUrl || tunnelUrl}/v1`} readOnly className="flex-1 font-mono text-sm" />
-                <button
-                  onClick={() => copy(`${tunnelPublicUrl || tunnelUrl}/v1`, "tunnel_url")}
-                  className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-colors shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[18px]">{copied === "tunnel_url" ? "check" : "content_copy"}</span>
-                </button>
-                <button
-                  onClick={() => setShowDisableTunnelModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
-                  title="Disable Tunnel"
-                >
-                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                </button>
-              </>
-            ) : tunnelLoading ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-border bg-input text-sm text-text-muted">
-                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                  {tunnelProgress || "Creating tunnel..."}
-                </div>
-                <button
-                  onClick={() => { setTunnelLoading(false); setTunnelProgress(""); }}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
-                  title="Stop"
-                >
-                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                </button>
-              </>
-            ) : tunnelStatus?.type === "error" ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-red-300 dark:border-red-800 bg-red-500/5 text-sm text-red-600 dark:text-red-400">
-                  <span className="material-symbols-outlined text-sm">error</span>
-                  {tunnelStatus.message}
-                </div>
-                <Button size="sm" icon="cloud_upload" onClick={() => setShowEnableTunnelModal(true)}>Enable</Button>
-              </>
-            ) : tunnelChecking ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-border bg-input text-sm text-text-muted">
-                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                  Checking...
-                </div>
-                <button
-                  onClick={() => setTunnelChecking(false)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
-                  title="Stop"
-                >
-                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                </button>
-              </>
-            ) : (
-              <Button
-                size="sm"
-                icon="cloud_upload"
-                onClick={() => {
-                  if (!requireApiKey) {
-                    setTunnelStatus({ type: "error", message: "Security required: Enable \"Require API key\" before activating the tunnel." });
-                    return;
-                  }
-                  setShowEnableTunnelModal(true);
-                }}
-                className="bg-linear-to-r from-primary to-blue-500 hover:from-primary-hover hover:to-blue-600 text-white!"
-              >
-                Enable
-              </Button>
-            )}
-          </div>
-          {/* Tailscale */}
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-mono px-1.5 py-0.5 rounded shrink-0 min-w-[68px] text-center ${
-              tsEnabled ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" : "bg-sidebar text-text-muted"
-            }`}>Tailscale</span>
-            {tsEnabled && !tsLoading ? (
-              <>
-                <Input value={`${tsUrl}/v1`} readOnly className="flex-1 font-mono text-sm" />
-                <button
-                  onClick={() => copy(`${tsUrl}/v1`, "ts_url")}
-                  className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-colors shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[18px]">{copied === "ts_url" ? "check" : "content_copy"}</span>
-                </button>
-                <button
-                  onClick={() => setShowDisableTsModal(true)}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
-                  title="Disable Tailscale"
-                >
-                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                </button>
-              </>
-            ) : (tsLoading || tsConnecting) ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-border bg-input text-sm text-text-muted">
-                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                  {tsProgress || "Connecting..."}
-                </div>
-                <button
-                  onClick={() => { setTsLoading(false); setTsConnecting(false); setTsProgress(""); }}
-                  className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors shrink-0"
-                  title="Stop"
-                >
-                  <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                </button>
-              </>
-            ) : tsStatus?.type === "error" ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded border border-red-300 dark:border-red-800 bg-red-500/5 text-sm text-red-600 dark:text-red-400">
-                  <span className="material-symbols-outlined text-sm">error</span>
-                  {tsStatus.message}
-                </div>
-                <Button size="sm" icon="vpn_lock" onClick={handleOpenTsModal}>Enable</Button>
-              </>
-            ) : (
-              <Button
-                size="sm"
-                icon="vpn_lock"
-                onClick={handleOpenTsModal}
-                className="bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white!"
-              >
-                Enable
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Security warnings when tunnel or tailscale is active */}
-        {(tunnelEnabled || tsEnabled) && (
-          <div className="mt-4 flex flex-col gap-2">
-            {!requireApiKey && (
-              <SecurityWarning
-                message="Require API key is disabled — your endpoint is publicly accessible without authentication."
-                action={{ label: "Enable", href: "#require-api-key" }}
-              />
-            )}
-            {(!requireLogin || !hasPassword) && (
-              <SecurityWarning
-                message={
-                  !requireLogin
-                    ? "Require login is disabled — anyone can access your dashboard via tunnel."
-                    : "Dashboard uses the default password — change it in Profile settings."
-                }
-                action={{
-                  label: !requireLogin ? "Enable" : "Change password",
-                  href: "/dashboard/profile",
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Tunnel dashboard access option */}
-        {(tunnelEnabled || tsEnabled) && (
-          <div className="mt-4 pt-4 border-t border-border flex items-center gap-3">
-            <Toggle
-              checked={tunnelDashboardAccess}
-              onChange={() => handleTunnelDashboardAccess(!tunnelDashboardAccess)}
-            />
-            <div className="flex items-center gap-1.5">
-              <p className="font-medium text-sm">Allow dashboard access via tunnel</p>
-              <Tooltip text="When enabled, the dashboard can be accessed through your tunnel or Tailscale URL (login still required). When disabled, dashboard access via tunnel/Tailscale is completely blocked." />
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* API Keys */}
-      <Card id="require-api-key">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">API Keys</h2>
-          <Button icon="add" onClick={() => setShowAddModal(true)}>
-            Create Key
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
-          <div>
-            <p className="font-medium">Require API key</p>
-            <p className="text-sm text-text-muted">
-              Requests without a valid key will be rejected
-            </p>
-          </div>
-          <Toggle
-            checked={requireApiKey}
-            onChange={() => handleRequireApiKey(!requireApiKey)}
-          />
-        </div>
-
-        {keys.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
-              <span className="material-symbols-outlined text-[32px]">vpn_key</span>
-            </div>
-            <p className="text-text-main font-medium mb-1">No API keys yet</p>
-            <p className="text-sm text-text-muted mb-4">Create your first API key to get started</p>
-            <Button icon="add" onClick={() => setShowAddModal(true)}>
-              Create Key
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            {keys.map((key) => (
-              <div
-                key={key.id}
-                className={`group flex items-center justify-between py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{key.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="text-xs text-text-muted font-mono">
-                      {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
-                    </code>
-                    <button
-                      onClick={() => toggleKeyVisibility(key.id)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
-                      title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
-                    >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => copy(key.key, key.id)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {copied === key.id ? "check" : "content_copy"}
-                      </span>
-                    </button>
-                  </div>
-                  <p className="text-xs text-text-muted mt-1">
-                    Created {new Date(key.createdAt).toLocaleDateString()}
-                  </p>
-                  {key.isActive === false && (
-                    <p className="text-xs text-orange-500 mt-1">Paused</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Toggle
-                    size="sm"
-                    checked={key.isActive ?? true}
-                    onChange={(checked) => {
-                      if (key.isActive && !checked) {
-                        if (confirm(`Pause API key "${key.name}"?\n\nThis key will stop working immediately but can be resumed later.`)) {
-                          handleToggleKey(key.id, checked);
-                        }
-                      } else {
-                        handleToggleKey(key.id, checked);
-                      }
-                    }}
-                    title={key.isActive ? "Pause key" : "Resume key"}
-                  />
-                  <button
-                    onClick={() => handleDeleteKey(key.id)}
-                    className="p-2 hover:bg-red-500/10 rounded text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
+    <TooltipProvider>
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto py-8 px-4 pb-12">
+        
+        {/* Active Gateway Hero */}
+        <section>
+          <Card className="shadow-none border-border bg-muted/10 p-0 overflow-hidden">
+            <CardHeader className="pb-4 pt-6 px-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold h-5 px-2">
+                  <Activity className="size-3 mr-1.5" /> GATEWAY ACTIVE
+                </Badge>
+                {tunnelEnabled && <Badge variant="outline" className="text-orange-500 border-orange-500/20 bg-orange-500/5 h-5 px-2">CLOUDFLARE</Badge>}
+                {tsEnabled && <Badge variant="outline" className="text-purple-500 border-purple-500/20 bg-purple-500/5 h-5 px-2">TAILSCALE</Badge>}
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Add Key Modal */}
-      <Modal
-        isOpen={showAddModal}
-        title="Create API Key"
-        onClose={() => {
-          setShowAddModal(false);
-          setNewKeyName("");
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          <Input
-            label="Key Name"
-            value={newKeyName}
-            onChange={(e) => setNewKeyName(e.target.value)}
-            placeholder="Production Key"
-          />
-          <div className="flex gap-2">
-            <Button onClick={handleCreateKey} fullWidth disabled={!newKeyName.trim()}>
-              Create
-            </Button>
-            <Button
-              onClick={() => {
-                setShowAddModal(false);
-                setNewKeyName("");
-              }}
-              variant="ghost"
-              fullWidth
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Created Key Modal */}
-      <Modal
-        isOpen={!!createdKey}
-        title="API Key Created"
-        onClose={() => setCreatedKey(null)}
-      >
-        <div className="flex flex-col gap-4">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2 font-medium">
-              Save this key now!
-            </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              This is the only time you will see this key. Store it securely.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              value={createdKey || ""}
-              readOnly
-              className="flex-1 font-mono text-sm"
-            />
-            <Button
-              variant="secondary"
-              icon={copied === "created_key" ? "check" : "content_copy"}
-              onClick={() => copy(createdKey, "created_key")}
-            >
-              {copied === "created_key" ? "Copied!" : "Copy"}
-            </Button>
-          </div>
-          <Button onClick={() => setCreatedKey(null)} fullWidth>
-            Done
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Enable Tunnel Modal */}
-      <Modal
-        isOpen={showEnableTunnelModal}
-        title="Enable Tunnel"
-        onClose={() => setShowEnableTunnelModal(false)}
-      >
-        <div className="flex flex-col gap-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">cloud_upload</span>
-              <div>
-                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
-                  Cloudflare Tunnel
-                </p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Expose your local 8Router to the internet. No port forwarding, no static IP needed. Share endpoint URL with your team or use it in Cursor, Cline, and other AI tools from anywhere.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {TUNNEL_BENEFITS.map((benefit) => (
-              <div key={benefit.title} className="flex flex-col items-center text-center p-3 rounded-lg bg-sidebar/50">
-                <span className="material-symbols-outlined text-xl text-primary mb-1">{benefit.icon}</span>
-                <p className="text-xs font-semibold">{benefit.title}</p>
-                <p className="text-xs text-text-muted">{benefit.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-text-muted">
-            Requires outbound port 7844 (TCP/UDP). Connection may take 10-30s.
-          </p>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleEnableTunnel}
-              fullWidth
-              className="bg-linear-to-r from-primary to-blue-500 hover:from-primary-hover hover:to-blue-600 text-white!"
-            >
-              Start Tunnel
-            </Button>
-            <Button onClick={() => setShowEnableTunnelModal(false)} variant="ghost" fullWidth>Cancel</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Disable Cloudflare Tunnel Modal */}
-      <Modal
-        isOpen={showDisableTunnelModal}
-        title="Disable Tunnel"
-        onClose={() => !tunnelLoading && setShowDisableTunnelModal(false)}
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-muted">The Cloudflare tunnel will be disconnected. Remote access via tunnel URL will stop working.</p>
-          <div className="flex gap-2">
-            <Button onClick={handleDisableTunnel} fullWidth disabled={tunnelLoading} className="bg-red-500! hover:bg-red-600! text-white!">
-              {tunnelLoading ? "Disabling..." : "Disable"}
-            </Button>
-            <Button onClick={() => setShowDisableTunnelModal(false)} variant="ghost" fullWidth disabled={tunnelLoading}>Cancel</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Tailscale Modal */}
-      <Modal
-        isOpen={showTsModal}
-        title="Tailscale Funnel"
-        onClose={() => { if (!tsInstalling) { setShowTsModal(false); setTsSudoPassword(""); setTsStatus(null); } }}
-      >
-        <div className="flex flex-col gap-4">
-          {/* Checking state */}
-          {tsInstalled === null && (
-            <p className="text-sm text-text-muted flex items-center gap-2">
-              <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-              Checking...
-            </p>
-          )}
-
-          {/* Not installed */}
-          {tsInstalled === false && !tsInstalling && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-text-muted">Tailscale is not installed. Install it to enable Funnel.</p>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleInstallTailscale}
-                  fullWidth
-                  className="bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white!"
-                >
-                  Install Tailscale
+              <CardTitle className="text-2xl font-bold tracking-tight">Public API Infrastructure</CardTitle>
+              <CardDescription className="text-sm font-medium text-muted-foreground">Standard OpenAI-compatible endpoint for global infrastructure routing.</CardDescription>
+            </CardHeader>
+            <CardContent className="pb-8 px-6">
+              <div className="flex flex-col sm:flex-row items-center gap-1 overflow-hidden rounded-xl border border-border bg-background/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                <div className="relative flex-1 w-full group">
+                  <div className="absolute inset-y-0 left-4 flex items-center text-muted-foreground opacity-50"><Terminal className="size-4" /></div>
+                  <Input value={currentPrimaryUrl} readOnly className="pl-11 h-12 font-mono text-sm border-none shadow-none focus-visible:ring-0 bg-transparent" />
+                </div>
+                <Button size="lg" className="h-12 px-8 font-bold rounded-none border-l border-border active:scale-[0.98] transition-transform" onClick={() => copy(currentPrimaryUrl, "primary_url")}>
+                  {copied === "primary_url" ? <Check className="mr-2 size-4" /> : <Copy className="mr-2 size-4" />}
+                  {copied === "primary_url" ? "Copied" : "Copy URL"}
                 </Button>
-                <Button onClick={() => setShowTsModal(false)} variant="ghost" fullWidth>Cancel</Button>
               </div>
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        </section>
 
-          {/* Installing with progress log */}
-          {tsInstalling && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-sm text-text-muted">
-                <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                Installing Tailscale...
+        {/* Connectivity Nodes */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <NodeCard title="Local Access" desc="Direct LAN connection." url={baseUrl} icon={Server} badge="DEFAULT" active={true} color="blue" />
+          <NodeCard title="Cloudflare Tunnel" desc="Public internet bridge." url={tunnelEnabled ? `${tunnelPublicUrl || tunnelUrl}/v1` : "Offline"} icon={CloudUpload} badge={tunnelEnabled ? "ACTIVE" : "OFFLINE"} active={tunnelEnabled} color="orange" onClick={() => tunnelEnabled ? setShowDisableTunnelModal(true) : setShowEnableTunnelModal(true)} />
+          <NodeCard title="Tailscale Funnel" desc="Private mesh bridge." url={tsEnabled ? `${tsUrl}/v1` : "Offline"} icon={Shield} badge={tsEnabled ? "ACTIVE" : "OFFLINE"} active={tsEnabled} color="purple" onClick={() => tsEnabled ? setShowDisableTsModal(true) : setShowTsModal(true)} />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Auth */}
+          <Card className="lg:col-span-8 shadow-none border-border p-0 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between p-6 border-b">
+              <div className="space-y-1">
+                <CardTitle className="text-xl font-bold">Node Authentication</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Manage active security credentials.</CardDescription>
               </div>
-              {tsInstallLog.length > 0 && (
-                <div ref={tsLogRef} className="bg-black/5 dark:bg-white/5 rounded p-2 max-h-40 overflow-y-auto font-mono text-xs text-text-muted">
-                  {tsInstallLog.map((line, i) => (
-                    <div key={i}>{line}</div>
+              <Button size="sm" onClick={() => setShowAddModal(true)} className="font-bold h-8 text-[10px] uppercase tracking-widest px-4">
+                <Plus className="mr-1.5 size-3.5" /> New Token
+              </Button>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between p-4 mb-8 rounded-xl border border-border bg-muted/20">
+                <div className="flex gap-4 items-center">
+                  <div className={cn("p-2 rounded-lg border bg-background", requireApiKey && "text-primary border-primary/20")}>
+                    <Lock className="size-4" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Security Enforcement</p>
+                    <p className="text-xs text-muted-foreground">Mandatory API key validation for all traffic.</p>
+                  </div>
+                </div>
+                <Switch checked={requireApiKey} onCheckedChange={handleRequireApiKey} className="scale-90" />
+              </div>
+
+              {keys.length === 0 ? (
+                <div className="text-center py-20 bg-muted/10 rounded-xl border border-dashed border-border flex flex-col items-center justify-center opacity-30 gap-3">
+                  <Key className="size-10" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">No access tokens defined</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {keys.map((key) => (
+                    <div key={key.id} className={cn("flex items-center justify-between p-3.5 rounded-xl border border-border hover:bg-muted/30 transition-all group", !key.isActive && "opacity-50 grayscale")}>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                           <span className="font-bold text-xs">{key.name}</span>
+                           {!key.isActive && <Badge variant="outline" className="h-4 text-[8px] font-black uppercase">PAUSED</Badge>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="text-[10px] font-mono text-muted-foreground/70">{visibleKeys.has(key.id) ? key.key : key.key.slice(0, 8) + "..."}</code>
+                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                             <Button variant="ghost" size="icon" className="size-6" onClick={() => {
+                               setVisibleKeys(prev => {
+                                 const next = new Set(prev);
+                                 if (next.has(key.id)) next.delete(key.id); else next.add(key.id);
+                                 return next;
+                               });
+                             }}>{visibleKeys.has(key.id) ? <EyeOff className="size-3" /> : <Eye className="size-3" />}</Button>
+                             <Button variant="ghost" size="icon" className="size-6" onClick={() => copy(key.key, key.id)}>{copied === key.id ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}</Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 pl-4 border-l">
+                         <Switch checked={key.isActive ?? true} onCheckedChange={(v) => handleToggleKey(key.id, v)} className="scale-75" />
+                         <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-red-500" onClick={() => handleDeleteKey(key.id)}><Trash2 className="size-3.5" /></Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {/* Installed: show Connect button */}
-          {tsInstalled === true && !tsInstalling && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Tailscale installed
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => {
-                    const tab = window.open("", "tailscale_auth", "width=600,height=700");
-                    if (tab) tab.document.write("<p style='font-family:sans-serif;text-align:center;margin-top:40px'>Connecting to Tailscale...</p>");
-                    handleConnectTailscale(tab);
-                  }}
-                  fullWidth
-                  className="bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white!"
-                >
-                  Connect
-                </Button>
-                <Button onClick={() => setShowTsModal(false)} variant="ghost" fullWidth>Cancel</Button>
-              </div>
-            </div>
-          )}
+          {/* Right: Tools */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            <Card className="shadow-none border-border overflow-hidden p-0 bg-muted/5">
+              <CardHeader className="p-4 border-b bg-muted/20">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2"><Terminal className="size-3.5" /> Integration</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="p-3 bg-black rounded-xl font-mono text-[10px] text-emerald-500/90 overflow-auto border border-white/5">
+                   <pre className="whitespace-pre-wrap break-all">{testCurl}</pre>
+                </div>
+                <p className="text-[10px] font-medium leading-relaxed text-muted-foreground/70">Test your node immediately using this cURL snippet. Standard API key required.</p>
+                <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest" onClick={() => copy(testCurl, "curl")}><Copy className="size-3 mr-2" /> Copy Script</Button>
+              </CardContent>
+            </Card>
 
-          {tsStatus && <StatusAlert status={tsStatus} />}
-        </div>
-      </Modal>
-
-      {/* Disable Tailscale Modal */}
-      <Modal
-        isOpen={showDisableTsModal}
-        title="Disable Tailscale"
-        onClose={() => !tsLoading && setShowDisableTsModal(false)}
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-muted">Tailscale Funnel will be stopped. Remote access via Tailscale URL will stop working.</p>
-          <div className="flex gap-2">
-            <Button onClick={handleDisableTailscale} fullWidth disabled={tsLoading} className="bg-red-500! hover:bg-red-600! text-white!">
-              {tsLoading ? "Disabling..." : "Disable"}
-            </Button>
-            <Button onClick={() => setShowDisableTsModal(false)} variant="ghost" fullWidth disabled={tsLoading}>Cancel</Button>
+            <Card className="shadow-none border-border p-0 overflow-hidden">
+               <CardHeader className="p-4 border-b bg-muted/20">
+                  <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2"><Settings2 className="size-3.5" /> Advanced</CardTitle>
+               </CardHeader>
+               <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                     <span className="text-xs font-bold">Remote UI Access</span>
+                     <Switch checked={tunnelDashboardAccess} onCheckedChange={v => {
+                       fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tunnelDashboardAccess: v }) }).then(() => setTunnelDashboardAccess(v));
+                     }} className="scale-75" />
+                  </div>
+                  <div className="flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                     <span className="text-xs font-bold">Session Security</span>
+                     <Switch checked={true} disabled className="scale-75" />
+                  </div>
+               </CardContent>
+               <CardFooter className="p-3 border-t bg-muted/10">
+                  <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest" render={<Link href="/dashboard/profile" />}>
+                    Security Settings <ExternalLink className="ml-2 size-3" />
+                  </Button>
+               </CardFooter>
+            </Card>
           </div>
         </div>
-      </Modal>
-    </div>
+
+        {/* Modals */}
+        <Dialog open={!!createdKey} onOpenChange={() => setCreatedKey(null)}>
+           <DialogContent className="sm:max-w-md">
+              <DialogHeader><DialogTitle className="text-emerald-600 flex items-center gap-2"><CheckCircle2 className="size-5" /> Token Generated</DialogTitle><DialogDescription>Stored securely, only shown once.</DialogDescription></DialogHeader>
+              <div className="p-4 bg-muted/50 rounded-xl font-mono text-sm border flex items-center justify-between gap-4 mt-4"><span className="truncate flex-1 font-bold text-primary">{createdKey}</span><Button variant="ghost" size="icon" onClick={() => copy(createdKey, "nk")}><Copy className="size-4" /></Button></div>
+              <DialogFooter className="mt-4"><Button className="w-full font-bold h-11" onClick={() => setCreatedKey(null)}>I have saved it</Button></DialogFooter>
+           </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+           <DialogContent className="sm:max-w-md">
+              <DialogHeader><DialogTitle>New Access Token</DialogTitle><DialogDescription>Identify this client connection.</DialogDescription></DialogHeader>
+              <div className="py-4 space-y-2"><Label className="text-[10px] font-bold uppercase tracking-widest opacity-50">Token Label</Label><Input value={newKeyName} onChange={e => setNewKeyName(e.target.value)} placeholder="e.g. Cursor IDE, Cline Agent" className="h-11 font-bold" autoFocus /></div>
+              <DialogFooter><Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button><Button onClick={handleCreateKey} disabled={!newKeyName.trim()}>Create Token</Button></DialogFooter>
+           </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEnableTunnelModal} onOpenChange={setShowEnableTunnelModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Connect Cloudflare Tunnel</DialogTitle><DialogDescription>Securely expose your node.</DialogDescription></DialogHeader>
+            <div className="py-4"><p className="text-xs text-muted-foreground leading-relaxed">This will initialize a cloudflared instance. Ensure "Global Authentication Policy" is active for security.</p></div>
+            <DialogFooter><Button variant="outline" onClick={() => setShowEnableTunnelModal(false)}>Cancel</Button><Button onClick={() => {
+              setShowEnableTunnelModal(false);
+              fetch("/api/tunnel/enable", { method: "POST" }).then(() => loadSettings());
+            }}>Initialize Tunnel</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDisableTunnelModal} onOpenChange={setShowDisableTunnelModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Sever Connection?</DialogTitle><DialogDescription>Cloudflare gateway will be dropped.</DialogDescription></DialogHeader>
+            <DialogFooter><Button variant="outline" onClick={() => setShowDisableTunnelModal(false)}>Cancel</Button><Button variant="destructive" onClick={() => {
+              fetch("/api/tunnel/disable", { method: "POST" }).then(() => { setTunnelEnabled(false); setShowDisableTunnelModal(false); });
+            }}>Disconnect</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+    </TooltipProvider>
   );
 }
 
-/** Reusable endpoint row component */
-function EndpointRow({ label, url, copyId, copied, onCopy, badge, actions }) {
+function NodeCard({ title, desc, url, icon: Icon, badge, active, color, onClick }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className={`text-xs font-mono px-1.5 py-0.5 rounded shrink-0 min-w-[68px] text-center ${badge === "CF" ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" :
-          badge === "TS" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" :
-            "bg-sidebar text-text-muted"
-        }`}>{label}</span>
-      <Input value={url} readOnly className="flex-1 font-mono text-sm" />
-      <button
-        onClick={() => onCopy(url, copyId)}
-        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-colors shrink-0"
-      >
-        <span className="material-symbols-outlined text-[18px]">{copied === copyId ? "check" : "content_copy"}</span>
-      </button>
-      {actions}
-    </div>
-  );
-}
-
-/** Reusable status alert */
-function StatusAlert({ status, className = "" }) {
-  // Render URLs in message as clickable links
-  const renderMessage = (msg) => {
-    const parts = msg.split(/(https?:\/\/[^\s]+)/g);
-    return parts.map((part, i) =>
-      /^https?:\/\//.test(part)
-        ? <a key={i} href={part} target="_blank" rel="noreferrer" className="underline font-medium">{part}</a>
-        : part
-    );
-  };
-
-  return (
-    <div className={`p-2 rounded text-sm ${className} ${status.type === "success" ? "bg-green-500/10 text-green-600 dark:text-green-400" :
-        status.type === "warning" ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" :
-        status.type === "info" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
-          "bg-red-500/10 text-red-600 dark:text-red-400"
-      }`}>
-      {renderMessage(status.message)}
-    </div>
-  );
-}
-
-/** Inline tooltip, Claude Code CLI style */
-function Tooltip({ text }) {
-  return (
-    <span className="relative group inline-flex items-center">
-      <span className="material-symbols-outlined text-[14px] text-text-muted cursor-help">help</span>
-      <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 z-50 w-64 rounded bg-gray-900 dark:bg-gray-800 text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-        {text}
-      </span>
-    </span>
-  );
-}
-
-/** Security warning banner with optional action link */
-function SecurityWarning({ message, action }) {
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
-      <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">warning</span>
-      <p className="text-xs flex-1">{message}</p>
-      {action && (
-        <a
-          href={action.href}
-          className="text-xs font-medium underline shrink-0 hover:opacity-80"
-          onClick={action.href.startsWith("#") ? (e) => {
-            e.preventDefault();
-            document.getElementById(action.href.slice(1))?.scrollIntoView({ behavior: "smooth" });
-          } : undefined}
-        >
-          {action.label}
-        </a>
-      )}
-    </div>
+    <Card className={cn("shadow-none border-border overflow-hidden transition-all", active && "ring-1 ring-primary/20 bg-primary/[0.02]")}>
+      <CardHeader className="pb-3 px-5 pt-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className={cn("p-2 rounded-lg border", active ? "bg-primary/10 border-primary/20 text-primary" : "bg-muted/50 text-muted-foreground")}><Icon className="size-5" /></div>
+          <Badge variant="outline" className={cn("h-4 text-[8px] font-black border-none uppercase", active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{badge}</Badge>
+        </div>
+        <CardTitle className="text-lg font-bold tracking-tight">{title}</CardTitle>
+        <CardDescription className="text-xs font-medium text-muted-foreground">{desc}</CardDescription>
+      </CardHeader>
+      <CardContent className="px-5">
+        <div className="p-2.5 bg-muted/30 rounded-lg font-mono text-[10px] text-muted-foreground border border-border truncate">{url}</div>
+      </CardContent>
+      <CardFooter className="px-5 pb-5 pt-2">
+         {onClick && <Button variant={active ? "outline" : "default"} size="sm" className="w-full h-8 text-[10px] font-bold uppercase tracking-widest" onClick={onClick}>{active ? "DISCONNECT" : "CONNECT NODE"}</Button>}
+      </CardFooter>
+    </Card>
   );
 }
 

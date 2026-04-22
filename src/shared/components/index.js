@@ -1,13 +1,33 @@
-// Shared Components - Export all
-export { default as Button } from "./Button";
-export { default as Input } from "./Input";
-export { default as Select } from "./Select";
-export { default as Card } from "./Card";
-export { default as Modal, ConfirmModal } from "./Modal";
+"use client";
+
+// Re-map shadcn/ui components to shared names to maintain compatibility
+export { Badge } from "@/components/ui/badge";
+export { Button } from "@/components/ui/button";
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+export { Input } from "@/components/ui/input";
+export { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue, 
+  SelectGroup, 
+  SelectLabel, 
+  SelectSeparator 
+} from "@/components/ui/select";
+export { Switch as Toggle } from "@/components/ui/switch";
+export { 
+  Dialog as Modal, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+
+// Original shared components that are still valid
 export { default as Loading, Spinner, PageLoading, Skeleton, CardSkeleton } from "./Loading";
 export { default as Avatar } from "./Avatar";
-export { default as Badge } from "./Badge";
-export { default as Toggle } from "./Toggle";
 export { default as ThemeToggle } from "./ThemeToggle";
 export { ThemeProvider } from "./ThemeProvider";
 export { default as Sidebar } from "./Sidebar";
@@ -16,7 +36,6 @@ export { default as Footer } from "./Footer";
 export { default as OAuthModal } from "./OAuthModal";
 export { default as ModelSelectModal } from "./ModelSelectModal";
 export { default as ManualConfigModal } from "./ManualConfigModal";
-export { default as UsageStats } from "./UsageStats";
 export { default as LanguageSwitcher } from "./LanguageSwitcher";
 export { default as NineRemoteButton } from "./NineRemoteButton";
 export { default as HeaderMenu } from "./HeaderMenu";
@@ -34,5 +53,3 @@ export { default as Tooltip } from "./Tooltip";
 
 // Layouts
 export * from "./layouts";
-
-

@@ -1,12 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
 import { useTheme } from "@/shared/hooks/useTheme";
 import ChangelogModal from "./ChangelogModal";
 import NineRemotePromoModal from "./NineRemotePromoModal";
 import LanguageSwitcher from "./LanguageSwitcher";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { 
+  LayoutGrid, 
+  History, 
+  Languages, 
+  Sun, 
+  Moon, 
+  Monitor, 
+  LogOut 
+} from "lucide-react";
 
 const LOCALE_INFO = {
   "en": { name: "English", flag: "🇺🇸" },
@@ -53,103 +70,51 @@ function getLocaleFromCookie() {
   return normalizeLocale(value);
 }
 
-function MenuItem({ icon, label, onClick, trailing, danger }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${
-        danger
-          ? "text-red-500 hover:bg-red-500/10"
-          : "text-text-main hover:bg-black/5 dark:hover:bg-white/5"
-      }`}
-    >
-      <span className={`material-symbols-outlined text-[20px] ${danger ? "" : "text-text-muted"}`}>
-        {icon}
-      </span>
-      <span className="flex-1 text-left">{label}</span>
-      {trailing && <span className="text-base">{trailing}</span>}
-    </button>
-  );
-}
-
-MenuItem.propTypes = {
-  icon: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
-  trailing: PropTypes.node,
-  danger: PropTypes.bool,
-};
-
 export default function HeaderMenu({ onLogout }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [locale, setLocale] = useState("en");
   const { toggleTheme, isDark } = useTheme();
-  const menuRef = useRef(null);
 
   useEffect(() => {
     setLocale(getLocaleFromCookie());
   }, [langOpen]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const close = () => setIsOpen(false);
-
   return (
     <>
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setIsOpen((v) => !v)}
-          className="flex items-center justify-center p-2 rounded-lg text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-          title="Menu"
-        >
-          <span className="material-symbols-outlined">grid_view</span>
-        </button>
-
-        {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-60 bg-surface border border-black/10 dark:border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden py-1">
-            <MenuItem
-              icon="history"
-              label="Change Log"
-              onClick={() => { close(); setChangelogOpen(true); }}
-            />
-            <MenuItem
-              icon="language"
-              label={LOCALE_INFO[locale]?.name || locale}
-              trailing={LOCALE_INFO[locale]?.flag || "🌐"}
-              onClick={() => { close(); setLangOpen(true); }}
-            />
-            <MenuItem
-              icon={isDark ? "light_mode" : "dark_mode"}
-              label="Theme"
-              onClick={() => { toggleTheme(); close(); }}
-            />
-            <MenuItem
-              icon="computer"
-              label="Remote"
-              onClick={() => { close(); setRemoteOpen(true); }}
-            />
-            <MenuItem
-              icon="logout"
-              label="Logout"
-              danger
-              onClick={() => { close(); onLogout(); }}
-            />
-          </div>
-        )}
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <LayoutGrid className="size-5" />
+            <span className="sr-only">Menu</span>
+          </Button>
+        } />
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => setChangelogOpen(true)}>
+            <History className="mr-2 size-4" />
+            <span>Change Log</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setLangOpen(true)}>
+            <Languages className="mr-2 size-4" />
+            <span className="flex-1">Language</span>
+            <span className="text-xs text-muted-foreground">{LOCALE_INFO[locale]?.flag}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => toggleTheme()}>
+            {isDark ? <Sun className="mr-2 size-4" /> : <Moon className="mr-2 size-4" />}
+            <span>Theme</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setRemoteOpen(true)}>
+            <Monitor className="mr-2 size-4" />
+            <span>Remote</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+            <LogOut className="mr-2 size-4" />
+            <span>Logout</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ChangelogModal isOpen={changelogOpen} onClose={() => setChangelogOpen(false)} />
       <NineRemotePromoModal isOpen={remoteOpen} onClose={() => setRemoteOpen(false)} />

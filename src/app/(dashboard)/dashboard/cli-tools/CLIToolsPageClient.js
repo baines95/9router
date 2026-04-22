@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardSkeleton } from "@/shared/components";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge, CardSkeleton } from "@/shared/components";
 import { CLI_TOOLS } from "@/shared/constants/cliTools";
 import { getModelsByProviderId, PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
 import { ClaudeToolCard, CodexToolCard, DroidToolCard, OpenClawToolCard, DefaultToolCard, OpenCodeToolCard, MitmLinkCard } from "./components";
 import { MITM_TOOLS } from "@/shared/constants/cliTools";
 
 const CLOUD_URL = process.env.NEXT_PUBLIC_CLOUD_URL;
-
 
 const STATUS_ENDPOINTS = {
   claude: "/api/cli-tools/claude-settings",
@@ -51,7 +51,7 @@ export default function CLIToolsPageClient({ machineId }) {
       );
       setToolStatuses(Object.fromEntries(entries));
     } catch (error) {
-      console.log("Error fetching tool statuses:", error);
+      console.error("Error fetching tool statuses:", error);
     }
   };
 
@@ -71,7 +71,7 @@ export default function CLIToolsPageClient({ machineId }) {
         setTunnelPublicUrl(data.publicUrl || "");
       }
     } catch (error) {
-      console.log("Error loading settings:", error);
+      console.error("Error loading settings:", error);
     }
   };
 
@@ -83,7 +83,7 @@ export default function CLIToolsPageClient({ machineId }) {
         setApiKeys(data.keys || []);
       }
     } catch (error) {
-      console.log("Error fetching API keys:", error);
+      console.error("Error fetching API keys:", error);
     }
   };
 
@@ -95,7 +95,7 @@ export default function CLIToolsPageClient({ machineId }) {
         setConnections(data.connections || []);
       }
     } catch (error) {
-      console.log("Error fetching connections:", error);
+      console.error("Error fetching connections:", error);
     } finally {
       setLoading(false);
     }
@@ -137,10 +137,16 @@ export default function CLIToolsPageClient({ machineId }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-4">
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
+      <div className="mx-auto max-w-7xl flex flex-col gap-8 pb-10 px-4">
+        <div className="space-y-2 py-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-full max-w-xl" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       </div>
     );
   }
@@ -188,14 +194,41 @@ export default function CLIToolsPageClient({ machineId }) {
   const mitmTools = Object.entries(MITM_TOOLS);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        {regularTools.map(([toolId, tool]) => renderToolCard(toolId, tool))}
-      </div>
-      <div className="flex flex-col gap-4">
-        {mitmTools.map(([toolId, tool]) => (
-          <MitmLinkCard key={toolId} tool={tool} />
-        ))}
+    <div className="mx-auto max-w-7xl flex flex-col gap-8 pb-10 px-4">
+      <header className="py-6 space-y-1">
+        <div className="flex items-center gap-2 mb-1">
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold px-2 py-0 h-5 text-[10px] tracking-wider uppercase">
+            Environment
+          </Badge>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight">CLI Tools</h1>
+        <p className="text-sm text-muted-foreground font-medium">Cấu hình các công cụ CLI như Claude Code, Cursor, v.v. để sử dụng với 8router.</p>
+      </header>
+
+      <div className="flex flex-col gap-8">
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">Phổ biến</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent"></div>
+          </div>
+          <div className="flex flex-col gap-3">
+            {regularTools.map(([toolId, tool]) => renderToolCard(toolId, tool))}
+          </div>
+        </section>
+
+        {mitmTools.length > 0 && (
+          <section className="space-y-4">
+             <div className="flex items-center gap-2 px-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">MITM Tools & Proxies</span>
+                <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent"></div>
+             </div>
+             <div className="flex flex-col gap-3">
+               {mitmTools.map(([toolId, tool]) => (
+                 <MitmLinkCard key={toolId} tool={tool} />
+               ))}
+             </div>
+          </section>
+        )}
       </div>
     </div>
   );

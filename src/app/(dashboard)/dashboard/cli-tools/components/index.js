@@ -1,3 +1,4 @@
+export { default as BaseToolCard } from "./BaseToolCard";
 export { default as ClaudeToolCard } from "./ClaudeToolCard";
 export { default as CodexToolCard } from "./CodexToolCard";
 export { default as DroidToolCard } from "./DroidToolCard";

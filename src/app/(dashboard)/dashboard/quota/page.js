@@ -4,15 +4,27 @@ import ProviderLimits from "../usage/components/ProviderLimits";
 
 function QuotaPageFallback() {
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-6">
-      <div className="border-b border-border/50 pb-3">
-        <Skeleton className="h-7 w-28" />
-        <Skeleton className="mt-2 h-3 max-w-xs" />
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48 rounded-lg" />
+          <Skeleton className="h-3 w-32 rounded-full" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-32 rounded-lg" />
+          <Skeleton className="h-9 w-9 rounded-lg" />
+        </div>
       </div>
-      <Skeleton className="h-16 w-full rounded-md" />
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Skeleton className="h-[180px] rounded-lg" />
-        <Skeleton className="h-[180px] rounded-lg" />
+      
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Skeleton className="h-32 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-48 rounded-xl" />
+        ))}
       </div>
     </div>
   );

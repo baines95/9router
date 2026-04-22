@@ -5,6 +5,7 @@ import "@/lib/initCloudSync"; // Auto-initialize cloud sync
 import "@/lib/network/initOutboundProxy"; // Auto-initialize outbound proxy env
 import { initConsoleLogCapture } from "@/lib/consoleLogBuffer";
 import { RuntimeI18nProvider } from "@/i18n/RuntimeI18nProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Hook console immediately at module load time (server-side only, runs once)
 initConsoleLogCapture();
@@ -41,7 +42,9 @@ export default function RootLayout({ children }) {
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
           <RuntimeI18nProvider>
-            {children}
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
           </RuntimeI18nProvider>
         </ThemeProvider>
       </body>

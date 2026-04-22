@@ -2,7 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Card from "@/shared/components/Card";
+import { 
+  Plus, 
+  Database, 
+  Cpu, 
+  Activity, 
+  Info, 
+  Settings2,
+  DollarSign,
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  LayoutGrid
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription,
+  CardFooter 
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import PricingModal from "@/shared/components/PricingModal";
 
 export default function PricingSettingsPage() {
@@ -11,163 +35,120 @@ export default function PricingSettingsPage() {
   const [currentPricing, setCurrentPricing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPricing();
-  }, []);
-
+  useEffect(() => { loadPricing(); }, []);
   const loadPricing = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/pricing");
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentPricing(data);
-      }
-    } catch (error) {
-      console.error("Failed to load pricing:", error);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch("/api/pricing");
+      if (res.ok) setCurrentPricing(await res.json());
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const handlePricingUpdated = () => {
-    loadPricing();
-  };
-
-  // Count total models with pricing
   const getModelCount = () => {
     if (!currentPricing) return 0;
-    let count = 0;
-    for (const provider in currentPricing) {
-      count += Object.keys(currentPricing[provider]).length;
-    }
-    return count;
-  };
-
-  // Get providers list
-  const getProviders = () => {
-    if (!currentPricing) return [];
-    return Object.keys(currentPricing).sort();
+    return Object.values(currentPricing).reduce((acc, p) => acc + Object.keys(p).length, 0);
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-5xl flex flex-col gap-8 py-8 px-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Pricing Settings</h1>
-          <p className="text-text-muted mt-1">
-            Configure pricing rates for cost tracking and calculations
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-border">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground font-bold text-[10px] uppercase tracking-widest">
+            <DollarSign className="size-4" />
+            Financial Configuration
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Rate Controller</h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Fine-tune model pricing for real-time cost tracking and audit logs.
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-        >
-          Edit Pricing
-        </button>
+
+        <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest h-9 px-6" onClick={() => setShowModal(true)}>
+          <Plus className="size-3.5 mr-2" /> Adjust Rates
+        </Button>
+      </header>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard label="Model catalog" value={loading ? "..." : getModelCount()} icon={Cpu} />
+        <StatCard label="Active hubs" value={loading ? "..." : Object.keys(currentPricing || {}).length} icon={LayoutGrid} />
+        <StatCard label="System health" value="Active" icon={Zap} color="text-emerald-500" />
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="text-text-muted text-sm uppercase font-semibold">
-            Total Models
-          </div>
-          <div className="text-2xl font-bold mt-1">
-            {loading ? "..." : getModelCount()}
-          </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Help Card */}
+        <Card className="lg:col-span-7 shadow-none border-border bg-muted/5 overflow-hidden">
+          <CardHeader className="border-b bg-muted/20">
+             <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Info className="size-4 text-primary" />
+                Calculation Logic
+             </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4 text-xs font-medium leading-relaxed text-muted-foreground/80">
+            <div className="p-4 rounded-xl border bg-background space-y-2">
+               <p className="font-bold text-foreground">Economic Formula</p>
+               <code className="block p-2 bg-muted rounded font-mono text-[10px] text-primary">Cost = (Input × Rate) + (Output × Rate) + (Cache × Discount)</code>
+            </div>
+            <p>Rates are defined as <span className="font-bold text-foreground">USD per 1,000,000 tokens</span>. For example, a rate of 2.50 represents $2.50 per 1M units.</p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+               <div className="space-y-1">
+                  <p className="font-bold text-foreground text-[10px] uppercase tracking-wider">Input Layer</p>
+                  <p>Standard prompt tokens sent to the inference engine.</p>
+               </div>
+               <div className="space-y-1">
+                  <p className="font-bold text-foreground text-[10px] uppercase tracking-wider">Output Layer</p>
+                  <p>Completion and reasoning tokens generated by the model.</p>
+               </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="text-text-muted text-sm uppercase font-semibold">
-            Providers
-          </div>
-          <div className="text-2xl font-bold mt-1">
-            {loading ? "..." : getProviders().length}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-text-muted text-sm uppercase font-semibold">
-            Status
-          </div>
-          <div className="text-2xl font-bold mt-1 text-success">
-            {loading ? "..." : "Active"}
-          </div>
+
+        {/* Preview Card */}
+        <Card className="lg:col-span-5 shadow-none border-border overflow-hidden flex flex-col">
+           <CardHeader className="border-b bg-muted/20">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                 <Activity className="size-4 text-primary" />
+                 Rate Snapshot
+              </CardTitle>
+           </CardHeader>
+           <CardContent className="p-0 flex-1 overflow-y-auto no-scrollbar">
+              {loading ? <div className="p-10 text-center opacity-20"><Activity className="size-6 animate-spin mx-auto" /></div> : currentPricing ? (
+                <div className="divide-y border-border">
+                   {Object.keys(currentPricing).slice(0, 10).map(p => (
+                      <div key={p} className="p-3.5 hover:bg-muted/30 transition-all flex items-center justify-between">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{p}</span>
+                         <Badge variant="outline" className="h-5 text-[9px] font-bold border-border bg-muted/50 px-2">{Object.keys(currentPricing[p]).length} Models</Badge>
+                      </div>
+                   ))}
+                </div>
+              ) : <div className="p-10 text-center opacity-20 text-[10px] font-bold uppercase">No data found</div>}
+           </CardContent>
+           <CardFooter className="p-3 border-t bg-muted/5">
+              <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest group" onClick={() => setShowModal(true)}>
+                 View full registry <ChevronRight className="ml-1 size-3 group-hover:translate-x-1 transition-transform" />
+              </Button>
+           </CardFooter>
         </Card>
       </div>
 
-      {/* Info Section */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">How Pricing Works</h2>
-        <div className="space-y-3 text-sm text-text-muted">
-          <p>
-            <strong>Cost Calculation:</strong> Costs are calculated based on token usage and pricing rates.
-            Each request&apos;s cost is determined by: (input_tokens × input_rate) + (output_tokens × output_rate) + (cached_tokens × cached_rate)
-          </p>
-          <p>
-            <strong>Pricing Format:</strong> All rates are in <strong>dollars per million tokens</strong> ($/1M tokens).
-            Example: An input rate of 2.50 means $2.50 per 1,000,000 input tokens.
-          </p>
-          <p>
-            <strong>Token Types:</strong>
-          </p>
-          <ul className="list-disc list-inside ml-4 space-y-1">
-            <li><strong>Input:</strong> Standard prompt tokens</li>
-            <li><strong>Output:</strong> Completion/response tokens</li>
-            <li><strong>Cached:</strong> Cached input tokens (typically 50% of input rate)</li>
-            <li><strong>Reasoning:</strong> Special reasoning/thinking tokens (fallback to output rate)</li>
-            <li><strong>Cache Creation:</strong> Tokens used to create cache entries (fallback to input rate)</li>
-          </ul>
-          <p>
-            <strong>Custom Pricing:</strong> You can override default pricing for specific models.
-            Reset to defaults anytime to restore standard rates.
-          </p>
-        </div>
-      </Card>
-
-      {/* Current Pricing Preview */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Current Pricing Overview</h2>
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-primary hover:underline text-sm"
-          >
-            View Full Details
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-4 text-text-muted">Loading pricing data...</div>
-        ) : currentPricing ? (
-          <div className="space-y-3">
-            {Object.keys(currentPricing).slice(0, 5).map(provider => (
-              <div key={provider} className="text-sm">
-                <span className="font-semibold">{provider.toUpperCase()}:</span>{" "}
-                <span className="text-text-muted">
-                  {Object.keys(currentPricing[provider]).length} models
-                </span>
-              </div>
-            ))}
-            {Object.keys(currentPricing).length > 5 && (
-              <div className="text-sm text-text-muted">
-                + {Object.keys(currentPricing).length - 5} more providers
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-text-muted">No pricing data available</div>
-        )}
-      </Card>
-
-      {/* Pricing Modal */}
-      {showModal && (
-        <PricingModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSave={handlePricingUpdated}
-        />
-      )}
+      {showModal && <PricingModal isOpen={showModal} onClose={() => setShowModal(false)} onSave={loadPricing} />}
     </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, color }) {
+  return (
+    <Card className="shadow-none border-border bg-muted/20">
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="space-y-0.5">
+           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">{label}</p>
+           <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+        </div>
+        <div className={cn("p-2 rounded-lg bg-background border border-border shadow-xs", color)}>
+           <Icon className="size-4" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

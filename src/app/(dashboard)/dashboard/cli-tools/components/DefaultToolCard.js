@@ -1,15 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Card, ModelSelectModal } from "@/shared/components";
+import { 
+  Input, 
+  ModelSelectModal,
+  Button,
+  Tooltip
+} from "@/shared/components";
+import { BaseToolCard } from "./";
+import { 
+  Copy, 
+  Check, 
+  X, 
+  Info, 
+  AlertTriangle, 
+  AlertCircle,
+  Search,
+  ExternalLink
+} from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
-export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, baseUrl, apiKeys, activeProviders = [], cloudEnabled = false, tunnelEnabled = false }) {
+export default function DefaultToolCard({ 
+  toolId, 
+  tool, 
+  isExpanded, 
+  onToggle, 
+  baseUrl, 
+  apiKeys, 
+  activeProviders = [], 
+  cloudEnabled = false, 
+  tunnelEnabled = false 
+}) {
   const [copiedField, setCopiedField] = useState(null);
   const [showModelModal, setShowModelModal] = useState(false);
   const [modelValue, setModelValue] = useState("");
-  
-  // Initialize state directly with computed value - no need for useEffect
   const [selectedApiKey, setSelectedApiKey] = useState(() => 
     apiKeys?.length > 0 ? apiKeys[0].key : ""
   );
@@ -19,7 +44,6 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
       ? selectedApiKey 
       : (!cloudEnabled ? "sk_8router" : "your-api-key");
     
-    // Add /v1 suffix only if not already present (DRY - avoid duplicate)
     const normalizedBaseUrl = baseUrl || "http://localhost:20128";
     const baseUrlWithV1 = normalizedBaseUrl.endsWith("/v1") 
       ? normalizedBaseUrl 
@@ -45,31 +69,31 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
 
   const renderApiKeySelector = () => {
     return (
-      <div className="mt-2 flex items-center gap-2">
-        {apiKeys && apiKeys.length > 0 ? (
+      <div className="flex items-center gap-2 mt-2">
+        {apiKeys?.length > 0 ? (
           <>
             <select
               value={selectedApiKey}
               onChange={(e) => setSelectedApiKey(e.target.value)}
-              className="flex-1 px-3 py-2 bg-bg-secondary rounded-lg text-sm border border-border focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="flex-1 h-9 px-3 bg-background border border-input rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
             >
               {apiKeys.map((key) => (
                 <option key={key.id} value={key.key}>{key.key}</option>
               ))}
             </select>
-            <button
+            <Button
+              variant="outline"
+              size="icon-sm"
               onClick={() => handleCopy(selectedApiKey, "apiKey")}
-              className="shrink-0 px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary rounded-lg border border-border transition-colors"
+              className="shrink-0 h-9 w-9"
             >
-              <span className="material-symbols-outlined text-lg">
-                {copiedField === "apiKey" ? "check" : "content_copy"}
-              </span>
-            </button>
+              {copiedField === "apiKey" ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+            </Button>
           </>
         ) : (
-          <span className="text-sm text-text-muted">
-            {cloudEnabled ? "No API keys - Create one in Keys page" : "sk_8router"}
-          </span>
+          <div className="h-9 flex items-center px-3 bg-muted/20 border border-border rounded-md text-xs text-muted-foreground w-full">
+            {cloudEnabled ? "Chưa có API key" : "sk_8router (Mặc định)"}
+          </div>
         )}
       </div>
     );
@@ -77,42 +101,40 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
 
   const renderModelSelector = () => {
     return (
-      <div className="mt-2 flex items-center gap-2">
-        <input
-          type="text"
+      <div className="flex items-center gap-2 mt-2">
+        <Input
           value={modelValue}
           onChange={(e) => setModelValue(e.target.value)}
           placeholder="provider/model-id"
-          className="flex-1 px-3 py-2 bg-bg-secondary rounded-lg text-sm border border-border focus:outline-none focus:ring-1 focus:ring-primary/50"
+          className="h-9 text-xs flex-1"
         />
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setShowModelModal(true)}
           disabled={!hasActiveProviders}
-          className={`shrink-0 px-3 py-2 rounded-lg border text-sm transition-colors ${
-            hasActiveProviders
-              ? "bg-bg-secondary border-border text-text-main hover:border-primary cursor-pointer"
-              : "opacity-50 cursor-not-allowed border-border"
-          }`}
+          className="h-9 px-3 shrink-0 font-semibold"
         >
-          Select Model
-        </button>
+          Chọn Model
+        </Button>
         {modelValue && (
           <>
-            <button
+            <Button
+              variant="outline"
+              size="icon-sm"
               onClick={() => handleCopy(modelValue, "model")}
-              className="shrink-0 px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary rounded-lg border border-border transition-colors"
+              className="shrink-0 h-9 w-9"
             >
-              <span className="material-symbols-outlined text-lg">
-                {copiedField === "model" ? "check" : "content_copy"}
-              </span>
-            </button>
-            <button
+              {copiedField === "model" ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setModelValue("")}
-              className="p-2 text-text-muted hover:text-red-500 rounded transition-colors"
-              title="Clear"
+              className="h-9 w-9 text-muted-foreground hover:text-destructive"
             >
-              <span className="material-symbols-outlined text-lg">close</span>
-            </button>
+              <X className="size-4" />
+            </Button>
           </>
         )}
       </div>
@@ -123,35 +145,27 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
     if (!tool.notes || tool.notes.length === 0) return null;
     
     return (
-      <div className="flex flex-col gap-2 mb-4">
+      <div className="space-y-3 mb-6">
         {tool.notes.map((note, index) => {
-          // Skip cloudCheck note if tunnel or cloud is enabled
           if (note.type === "cloudCheck" && (cloudEnabled || tunnelEnabled)) return null;
           
           const isWarning = note.type === "warning";
           const isError = note.type === "cloudCheck" && !cloudEnabled && !tunnelEnabled;
           
-          let bgClass = "bg-blue-500/10 border-blue-500/30";
-          let textClass = "text-blue-600 dark:text-blue-400";
-          let iconClass = "text-blue-500";
-          let icon = "info";
-          
-          if (isWarning) {
-            bgClass = "bg-yellow-500/10 border-yellow-500/30";
-            textClass = "text-yellow-600 dark:text-yellow-400";
-            iconClass = "text-yellow-500";
-            icon = "warning";
-          } else if (isError) {
-            bgClass = "bg-red-500/10 border-red-500/30";
-            textClass = "text-red-600 dark:text-red-400";
-            iconClass = "text-red-500";
-            icon = "error";
-          }
-          
           return (
-            <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${bgClass}`}>
-              <span className={`material-symbols-outlined text-lg ${iconClass}`}>{icon}</span>
-              <p className={`text-sm ${textClass}`}>{note.text}</p>
+            <div 
+              key={index} 
+              className={cn(
+                "flex items-start gap-3 p-4 rounded-xl border",
+                isWarning ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400" :
+                isError ? "bg-destructive/10 border-destructive/30 text-destructive" :
+                "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400"
+              )}
+            >
+              {isWarning ? <AlertTriangle className="size-5 shrink-0 mt-0.5" /> :
+               isError ? <AlertCircle className="size-5 shrink-0 mt-0.5" /> :
+               <Info className="size-5 shrink-0 mt-0.5" />}
+              <p className="text-sm font-medium">{note.text}</p>
             </div>
           );
         })}
@@ -166,38 +180,38 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
   };
 
   const renderGuideSteps = () => {
-    if (!tool.guideSteps) return <p className="text-text-muted text-sm">Coming soon...</p>;
+    if (!tool.guideSteps) return <p className="text-muted-foreground text-sm italic">Sắp có hướng dẫn...</p>;
 
     return (
-      <div className="flex flex-col gap-4">
+      <div className="space-y-6">
         {renderNotes()}
         {canShowGuide() && tool.guideSteps.map((item) => (
           <div key={item.step} className="flex items-start gap-4">
             <div 
-              className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold text-white"
-              style={{ backgroundColor: tool.color }}
+              className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white shadow-sm"
+              style={{ backgroundColor: tool.color || "#6366f1" }}
             >
               {item.step}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-text">{item.title}</p>
-              {item.desc && <p className="text-sm text-text-muted mt-0.5">{item.desc}</p>}
+            <div className="flex-1 min-w-0 space-y-2">
+              <p className="font-bold text-sm">{item.title}</p>
+              {item.desc && <p className="text-xs text-muted-foreground">{item.desc}</p>}
               {item.type === "apiKeySelector" && renderApiKeySelector()}
               {item.type === "modelSelector" && renderModelSelector()}
               {item.value && (
-                <div className="mt-2 flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-bg-secondary rounded-lg text-sm font-mono border border-border truncate">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 bg-muted/50 rounded-lg text-[11px] font-mono border border-border truncate">
                     {replaceVars(item.value)}
                   </code>
                   {item.copyable && (
-                    <button
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
                       onClick={() => handleCopy(item.value, `${item.step}-${item.title}`)}
-                      className="shrink-0 px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary rounded-lg border border-border transition-colors"
+                      className="shrink-0 h-8 w-8"
                     >
-                      <span className="material-symbols-outlined text-lg">
-                        {copiedField === `${item.step}-${item.title}` ? "check" : "content_copy"}
-                      </span>
-                    </button>
+                      {copiedField === `${item.step}-${item.title}` ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                    </Button>
                   )}
                 </div>
               )}
@@ -206,21 +220,25 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
         ))}
 
         {canShowGuide() && tool.codeBlock && (
-          <div className="mt-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-text-muted uppercase tracking-wide">{tool.codeBlock.language}</span>
-              <button
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {tool.codeBlock.language}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleCopy(tool.codeBlock.code, "codeblock")}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-bg-secondary hover:bg-bg-tertiary rounded border border-border transition-colors"
+                className="h-7 px-2 text-[10px] font-bold uppercase"
               >
-                <span className="material-symbols-outlined text-sm">
-                  {copiedField === "codeblock" ? "check" : "content_copy"}
-                </span>
-                {copiedField === "codeblock" ? "Copied!" : "Copy"}
-              </button>
+                {copiedField === "codeblock" ? <Check className="mr-1.5 size-3 text-emerald-500" /> : <Copy className="mr-1.5 size-3" />}
+                {copiedField === "codeblock" ? "Đã sao chép!" : "Sao chép"}
+              </Button>
             </div>
-            <pre className="p-4 bg-bg-secondary rounded-lg border border-border overflow-x-auto">
-              <code className="text-sm font-mono whitespace-pre">{replaceVars(tool.codeBlock.code)}</code>
+            <pre className="p-4 bg-muted/50 rounded-xl border border-border overflow-x-auto">
+              <code className="text-[11px] font-mono whitespace-pre text-foreground/80 leading-relaxed">
+                {replaceVars(tool.codeBlock.code)}
+              </code>
             </pre>
           </div>
         )}
@@ -228,56 +246,21 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
     );
   };
 
-  const renderIcon = () => {
-    if (tool.image) {
-      return (
-        <Image
-          src={tool.image}
-          alt={tool.name}
-          width={32}
-          height={32}
-          className="size-8 object-contain rounded-lg"
-          sizes="32px"
-          onError={(e) => { e.target.style.display = "none"; }}
-        />
-      );
-    }
-    if (tool.icon) {
-      return <span className="material-symbols-outlined text-xl" style={{ color: tool.color }}>{tool.icon}</span>;
-    }
-    return (
-      <Image
-        src={`/providers/${toolId}.png`}
-        alt={tool.name}
-        width={32}
-        height={32}
-        className="size-8 object-contain rounded-lg"
-        sizes="32px"
-        onError={(e) => { e.target.style.display = "none"; }}
-      />
-    );
-  };
-
   return (
-    <Card padding="xs" className="overflow-hidden">
-      <div className="flex items-center justify-between hover:cursor-pointer" onClick={onToggle}>
-        <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg flex items-center justify-center shrink-0">
-            {renderIcon()}
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-medium text-sm">{tool.name}</h3>
-            <p className="text-xs text-text-muted truncate">{tool.description}</p>
-          </div>
-        </div>
-        <span className={`material-symbols-outlined text-text-muted text-[20px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>expand_more</span>
-      </div>
-
-      {isExpanded && (
-        <div className="mt-6 pt-6 border-t border-border">
+    <>
+      <BaseToolCard
+        tool={tool}
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+        status={null}
+        onApply={null}
+        onReset={null}
+        hasActiveProviders={hasActiveProviders}
+      >
+        <div className="pt-2">
           {renderGuideSteps()}
         </div>
-      )}
+      </BaseToolCard>
 
       <ModelSelectModal
         isOpen={showModelModal}
@@ -285,9 +268,8 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
         onSelect={handleSelectModel}
         selectedModel={modelValue}
         activeProviders={activeProviders}
-        title="Select Model"
+        title="Chọn Model"
       />
-    </Card>
+    </>
   );
 }
-

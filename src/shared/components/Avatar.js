@@ -1,6 +1,12 @@
 "use client";
 
-import { cn } from "@/shared/utils/cn";
+import * as React from "react";
+import {
+  Avatar as ShadcnAvatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 export default function Avatar({
   src,
@@ -10,24 +16,24 @@ export default function Avatar({
   className,
 }) {
   const sizes = {
-    xs: "size-6 text-xs",
-    sm: "size-8 text-sm",
-    md: "size-10 text-base",
-    lg: "size-12 text-lg",
-    xl: "size-16 text-xl",
+    xs: "size-6 text-[10px]",
+    sm: "size-8 text-xs",
+    md: "size-10 text-sm",
+    lg: "size-12 text-base",
+    xl: "size-16 text-lg",
   };
 
   // Get initials from name
   const getInitials = (name) => {
     if (!name) return "?";
-    const parts = name.split(" ");
+    const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Generate color from name
+  // Generate color from name (fallback to semantic colors)
   const getColorFromName = (name) => {
     if (!name) return "bg-primary";
     const colors = [
@@ -49,40 +55,17 @@ export default function Avatar({
       "bg-pink-500",
       "bg-rose-500",
     ];
-    const index = name.charCodeAt(0) % colors.length;
+    const charCode = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const index = charCode % colors.length;
     return colors[index];
   };
 
-  if (src) {
-    return (
-      <div
-        className={cn(
-          "rounded-full bg-cover bg-center bg-no-repeat",
-          "ring-2 ring-white dark:ring-surface-dark shadow-sm",
-          sizes[size],
-          className
-        )}
-        style={{ backgroundImage: `url(${src})` }}
-        role="img"
-        aria-label={alt}
-      />
-    );
-  }
-
   return (
-    <div
-      className={cn(
-        "rounded-full flex items-center justify-center font-semibold text-white",
-        "ring-2 ring-white dark:ring-surface-dark shadow-sm",
-        sizes[size],
-        getColorFromName(name),
-        className
-      )}
-      role="img"
-      aria-label={alt}
-    >
-      {getInitials(name)}
-    </div>
+    <ShadcnAvatar className={cn(sizes[size], "border border-border shadow-sm", className)}>
+      {src && <AvatarImage src={src} alt={alt} className="object-cover" />}
+      <AvatarFallback className={cn("text-white font-semibold", getColorFromName(name))}>
+        {getInitials(name)}
+      </AvatarFallback>
+    </ShadcnAvatar>
   );
 }
-
