@@ -3,7 +3,7 @@ import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 
 import { cn } from "@/lib/utils"
-import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import { CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react"
 
 function Breadcrumb({
   className,
@@ -26,7 +26,7 @@ function BreadcrumbList({
     <ol
       data-slot="breadcrumb-list"
       className={cn(
-        "flex flex-wrap items-center gap-1.5 text-sm wrap-break-word text-muted-foreground",
+        "flex flex-wrap items-center gap-1.5 text-xs wrap-break-word text-muted-foreground",
         className
       )}
       {...props} />
@@ -90,7 +90,7 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}>
       {children ?? (
-        <ChevronRightIcon />
+        <CaretRightIcon />
       )}
     </li>
   );
@@ -107,7 +107,7 @@ function BreadcrumbEllipsis({
       aria-hidden="true"
       className={cn("flex size-5 items-center justify-center [&>svg]:size-4", className)}
       {...props}>
-      <MoreHorizontalIcon />
+      <DotsThreeIcon />
       <span className="sr-only">More</span>
     </span>
   );

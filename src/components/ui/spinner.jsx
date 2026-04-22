@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils"
-import { Loader2Icon } from "lucide-react"
+import { SpinnerIcon } from "@phosphor-icons/react"
 
 function Spinner({
   className,
   ...props
 }) {
   return (
-    <Loader2Icon
+    <SpinnerIcon
       role="status"
       aria-label="Loading"
       className={cn("size-4 animate-spin", className)}

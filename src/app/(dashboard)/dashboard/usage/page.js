@@ -1,5 +1,5 @@
-import UsagePageClient from "./UsagePageClient";
+import UsagePageClient from"./UsagePageClient";
 
 export default function UsagePage() {
-  return <UsagePageClient />;
+ return <UsagePageClient />;
 }

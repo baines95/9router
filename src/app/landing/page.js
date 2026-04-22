@@ -19,24 +19,22 @@ import {
 export default function LandingPage() {
   const router = useRouter();
   return (
-    <div className="relative text-white font-sans overflow-x-hidden antialiased selection:bg-[#f97815] selection:text-white">
+    <div className="relative text-foreground font-sans overflow-x-hidden antialiased selection:bg-primary selection:text-primary-foreground">
       {/* Animated Background */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-[#181411]">
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-background">
         {/* Grid pattern */}
         <div className="absolute inset-0 opacity-[0.06]" style={{
-          backgroundImage: `linear-gradient(to right, #f97815 1px, transparent 1px), linear-gradient(to bottom, #f97815 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(to right, hsl(var(--primary)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--primary)) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }}></div>
         
         {/* Animated gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-[#f97815]/12 rounded-full blur-[130px] animate-blob"></div>
+        <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-primary/12 rounded-full blur-[130px] animate-blob"></div>
         <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[130px] animate-blob" style={{ animationDelay: '2s', animationDuration: '22s' }}></div>
         <div className="absolute bottom-0 left-1/2 w-[650px] h-[650px] bg-blue-500/8 rounded-full blur-[130px] animate-blob" style={{ animationDelay: '4s', animationDuration: '25s' }}></div>
         
         {/* Vignette effect */}
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(circle at center, transparent 0%, rgba(24, 20, 17, 0.4) 100%)'
-        }}></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background))_100%)] opacity-40"></div>
       </div>
 
       <div className="relative z-10">
@@ -57,20 +55,20 @@ export default function LandingPage() {
         
         {/* CTA — shadcn Card + Button */}
         <section className="relative overflow-hidden px-6 py-32">
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-[#f97815]/5 to-transparent"></div>
-          <Card className="relative z-10 mx-auto max-w-4xl border-[#3a2f27] bg-[#1a1512]/90 text-center text-white shadow-2xl backdrop-blur-md">
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-primary/5 to-transparent"></div>
+          <Card className="relative z-10 mx-auto max-w-4xl border-border/50 bg-card/90 text-center shadow-none backdrop-blur-md">
             <CardHeader className="space-y-4">
-              <CardTitle className="font-heading text-4xl font-black tracking-tight text-white md:text-5xl">
+              <CardTitle className="font-heading text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
                 Ready to Simplify Your AI Infrastructure?
               </CardTitle>
-              <CardDescription className="mx-auto max-w-2xl text-lg text-gray-400">
+              <CardDescription className="mx-auto max-w-2xl text-lg text-muted-foreground">
                 Join developers who are streamlining their AI integrations with 8Router. Open source and free to start.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 size="lg"
-                className="h-14 w-full rounded-lg border-transparent bg-[#f97815] px-10 text-lg font-bold text-[#181411] shadow-[0_0_20px_rgba(249,120,21,0.5)] hover:bg-[#e0650a] sm:w-auto"
+                className="h-14 w-full rounded-lg border-transparent bg-primary px-10 text-lg font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto"
                 onClick={() => router.push("/dashboard")}
               >
                 Start Free
@@ -78,7 +76,7 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-14 w-full rounded-lg border-[#3a2f27] bg-transparent px-10 text-lg font-bold text-white hover:bg-[#23180f] sm:w-auto"
+                className="h-14 w-full rounded-lg border-border/50 bg-transparent px-10 text-lg font-semibold text-foreground hover:bg-muted/10 sm:w-auto"
                 onClick={() => window.open("https://github.com/decolua/8router#readme", "_blank")}
               >
                 Read Documentation
@@ -118,4 +116,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

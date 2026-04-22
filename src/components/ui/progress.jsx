@@ -32,7 +32,7 @@ function ProgressTrack({
   return (
     <ProgressPrimitive.Track
       className={cn(
-        "relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted",
+        "relative flex h-1 w-full items-center overflow-x-hidden rounded-none bg-muted",
         className
       )}
       data-slot="progress-track"
@@ -58,7 +58,7 @@ function ProgressLabel({
 }) {
   return (
     <ProgressPrimitive.Label
-      className={cn("text-sm font-medium", className)}
+      className={cn("text-xs", className)}
       data-slot="progress-label"
       {...props} />
   );
@@ -70,7 +70,7 @@ function ProgressValue({
 }) {
   return (
     <ProgressPrimitive.Value
-      className={cn("ml-auto text-sm text-muted-foreground tabular-nums", className)}
+      className={cn("ml-auto text-xs text-muted-foreground tabular-nums", className)}
       data-slot="progress-value"
       {...props} />
   );

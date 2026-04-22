@@ -1,5 +1,5 @@
-import TranslatorPageClient from "./TranslatorPageClient";
+import TranslatorPageClient from"./TranslatorPageClient";
 
 export default function TranslatorPage() {
-  return <TranslatorPageClient />;
+ return <TranslatorPageClient />;
 }

@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
 import "@/lib/initCloudSync"; // Auto-initialize cloud sync
@@ -10,9 +10,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 // Hook console immediately at module load time (server-side only, runs once)
 initConsoleLogCapture();
 
-const inter = Inter({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-mono",
 });
 
 export const metadata = {
@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${jetbrainsMono.variable} font-mono antialiased`}>
         <ThemeProvider>
           <RuntimeI18nProvider>
             <TooltipProvider>

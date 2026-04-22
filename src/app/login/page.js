@@ -77,7 +77,7 @@ export default function LoginPage() {
           <CardHeader className="bg-muted/20 border-b border-border p-6">
              <div className="flex items-center gap-2 text-primary">
                 <Lock className="size-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Secure Access</span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest">Secure Access</span>
              </div>
           </CardHeader>
           <CardContent className="p-6">

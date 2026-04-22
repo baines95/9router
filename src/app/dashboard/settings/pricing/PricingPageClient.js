@@ -110,7 +110,7 @@ export default function PricingPageClient({ initialPricing }) {
                 <div className="divide-y border-border">
                    {Object.keys(currentPricing).slice(0, 10).map(p => (
                       <div key={p} className="p-3.5 hover:bg-muted/30 transition-all flex items-center justify-between">
-                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{p}</span>
+                         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">{p}</span>
                          <Badge variant="outline" className="h-5 text-[9px] font-bold border-border bg-muted/50 px-2">{Object.keys(currentPricing[p]).length} Models</Badge>
                       </div>
                    ))}

@@ -2,7 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import { CaretLeftIcon, CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react"
 
 function Pagination({
   className,
@@ -69,7 +69,7 @@ function PaginationPrevious({
       size="default"
       className={cn("pl-1.5!", className)}
       {...props}>
-      <ChevronLeftIcon data-icon="inline-start" />
+      <CaretLeftIcon data-icon="inline-start" />
       <span className="hidden sm:block">{text}</span>
     </PaginationLink>
   );
@@ -87,7 +87,7 @@ function PaginationNext({
       className={cn("pr-1.5!", className)}
       {...props}>
       <span className="hidden sm:block">{text}</span>
-      <ChevronRightIcon data-icon="inline-end" />
+      <CaretRightIcon data-icon="inline-end" />
     </PaginationLink>
   );
 }
@@ -105,7 +105,7 @@ function PaginationEllipsis({
         className
       )}
       {...props}>
-      <MoreHorizontalIcon />
+      <DotsThreeIcon />
       <span className="sr-only">More pages</span>
     </span>
   );

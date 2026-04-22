@@ -104,8 +104,8 @@ export default function Features() {
     <section className="py-24 px-6" id="features">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Features</h2>
-          <p className="text-gray-400 max-w-xl text-lg">
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4 text-foreground">Powerful Features</h2>
+          <p className="text-muted-foreground max-w-xl text-lg">
             Everything you need to manage your AI infrastructure in one place, built for scale.
           </p>
         </div>
@@ -114,15 +114,15 @@ export default function Features() {
           {FEATURES.map((feature) => (
             <div 
               key={feature.title}
-              className={`p-6 rounded-xl bg-[#23180f] border border-[#3a2f27] ${feature.colors.border} ${feature.colors.bg} transition-all duration-300 group`}
+              className={`p-6 rounded-xl bg-card border border-border/50 ${feature.colors.border} ${feature.colors.bg} transition-all duration-300 group`}
             >
               <div className={`w-10 h-10 rounded-lg ${feature.colors.iconBg} flex items-center justify-center mb-4 ${feature.colors.iconText} group-hover:scale-110 transition-transform duration-300`}>
                 <span className="material-symbols-outlined">{feature.icon}</span>
               </div>
-              <h3 className={`text-lg font-bold mb-2 ${feature.colors.titleHover} transition-colors`}>
+              <h3 className={`text-lg font-semibold mb-2 text-foreground ${feature.colors.titleHover} transition-colors`}>
                 {feature.title}
               </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
@@ -130,4 +130,3 @@ export default function Features() {
     </section>
   );
 }
-

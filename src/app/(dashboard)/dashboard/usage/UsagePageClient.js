@@ -1,433 +1,424 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useMemo, useCallback } from"react";
+import { useSearchParams, useRouter } from"next/navigation";
 import { 
-  Activity, 
-  BarChart3, 
-  Clock, 
-  Cpu, 
-  Database, 
-  History, 
-  Zap, 
-  Key,
-  TrendingUp, 
-  Filter,
-  Server,
-  Network,
-  Terminal,
-  ChevronRight,
-  ShieldCheck,
-  ArrowUp,
-  ArrowDown,
-  LayoutDashboard,
-  Search
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+ ChartLineUp as Activity, 
+ ChartBar as BarChart3, 
+ Clock, 
+ Cpu, 
+ Database, 
+ ClockCounterClockwise as History, 
+ Lightning as Zap, 
+ Key,
+ TrendUp as TrendingUp, 
+ Funnel as Filter, 
+ HardDrives as Server,
+ Graph as Network,
+ Terminal,
+ CaretRight as ChevronRight,
+ ShieldCheck,
+ ArrowUp,
+ ArrowDown,
+ SquaresFour as LayoutDashboard,
+ MagnifyingGlass as Search
+} from "@phosphor-icons/react";
+import { cn } from"@/lib/utils";
+import { Badge } from"@/components/ui/badge";
+import { Button, buttonVariants } from"@/components/ui/button";
 import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter 
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+ Card, 
+ CardContent, 
+ CardHeader, 
+ CardTitle, 
+ CardDescription,
+ CardFooter 
+} from"@/components/ui/card";
+import { Skeleton } from"@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from"@/components/ui/tabs";
+import { Separator } from"@/components/ui/separator";
+import { ScrollArea } from"@/components/ui/scroll-area";
 
-import RequestDetailsTab from "./components/RequestDetailsTab";
-import ProviderTopology from "./components/ProviderTopology";
-import UsageChart from "./components/UsageChart";
-import UsageTable, { fmt } from "./components/UsageTable";
-import { FREE_PROVIDERS } from "@/shared/constants/providers";
+import RequestDetailsTab from"./components/RequestDetailsTab";
+import ProviderTopology from"./components/ProviderTopology";
+import UsageChart from"./components/UsageChart";
+import UsageTable, { fmt } from"./components/UsageTable";
+import { FREE_PROVIDERS } from"@/shared/constants/providers";
 
 const PERIODS = [
-  { value: "24h", label: "24h" },
-  { value: "7d", label: "7D" },
-  { value: "30d", label: "30D" },
-  { value: "60d", label: "60D" },
+ { value:"24h", label:"24h"},
+ { value:"7d", label:"7D"},
+ { value:"30d", label:"30D"},
+ { value:"60d", label:"60D"},
 ];
 
 // --- Main Page Component ---
 
 export default function UsagePage() {
-  return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <main className="flex-1 space-y-8 p-6 lg:p-10 pt-6">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-8">
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold tracking-tight">Analytics Hub</h2>
-            <p className="text-muted-foreground text-sm">
-              Monitor your infrastructure usage and traffic metrics in real-time.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <PeriodSelector />
-          </div>
-        </div>
+ return (
+ <div className="mx-auto max-w-6xl flex flex-col gap-4 p-4 lg:p-6">
+ {/* Header Section */}
+ <header className="flex items-center justify-between border-b border-border/40 pb-4">
+ <div className="space-y-1">
+ <h2 className="text-2xl font-medium tracking-tight">Analytics Hub</h2>
+ <p className="text-muted-foreground text-xs">
+ Monitor infrastructure usage and traffic in real-time.
+ </p>
+ </div>
+ <div className="flex items-center gap-2">
+ <PeriodSelector />
+ </div>
+ </header>
 
-        <Suspense fallback={<UsageLoadingState />}>
-          <UsageContent />
-        </Suspense>
-      </main>
-    </div>
-  );
+ <Suspense fallback={<UsageLoadingState />}>
+ <UsageContent />
+ </Suspense>
+ </div>
+ );
 }
 
 // --- Sub-components ---
 
 function UsageContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+ const searchParams = useSearchParams();
+ const router = useRouter();
 
-  const tabFromUrl = searchParams.get("tab");
-  const activeTab = tabFromUrl && ["overview", "details"].includes(tabFromUrl)
-    ? tabFromUrl
-    : "overview";
+ const tabFromUrl = searchParams.get("tab");
+ const activeTab = tabFromUrl && ["overview","details"].includes(tabFromUrl)
+ ? tabFromUrl
+ :"overview";
 
-  const handleTabChange = (value) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", value);
-    router.push(`/dashboard/usage?${params.toString()}`, { scroll: false });
-  };
+ const handleTabChange = (value) => {
+ const params = new URLSearchParams(searchParams);
+ params.set("tab", value);
+ router.push(`/dashboard/usage?${params.toString()}`, { scroll: false });
+ };
 
-  return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-      <TabsList className="bg-muted/50 p-1 border border-border">
-        <TabsTrigger value="overview" className="gap-2 px-4 py-1.5 rounded-md">
-          <LayoutDashboard className="size-3.5" />
-          <span className="text-xs font-bold uppercase tracking-wider">Overview</span>
-        </TabsTrigger>
-        <TabsTrigger value="details" className="gap-2 px-4 py-1.5 rounded-md">
-          <Terminal className="size-3.5" />
-          <span className="text-xs font-bold uppercase tracking-wider">Traffic Inspector</span>
-        </TabsTrigger>
-      </TabsList>
+ return (
+ <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+ <TabsList className="bg-transparent border-b border-border/40 w-full justify-start rounded-none h-auto p-0 gap-6">
+ <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 py-2 text-xs font-semibold capitalize data-[state=active]:shadow-none -mb-px">
+ <LayoutDashboard className="size-3.5 mr-1.5" weight="bold"/>
+ Overview
+ </TabsTrigger>
+ <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 py-2 text-xs font-semibold capitalize data-[state=active]:shadow-none -mb-px">
+ <Terminal className="size-3.5 mr-1.5" weight="bold"/>
+ Traffic Inspector
+ </TabsTrigger>
+ </TabsList>
 
-      <TabsContent value="overview" className="space-y-8 animate-in fade-in duration-500">
-        <UsageDashboard />
-      </TabsContent>
+ <TabsContent value="overview"className="space-y-4 animate-in fade-in duration-500 mt-0">
+ <UsageDashboard />
+ </TabsContent>
 
-      <TabsContent value="details" className="animate-in fade-in duration-500">
-        <RequestDetailsTab />
-      </TabsContent>
-    </Tabs>
-  );
+ <TabsContent value="details"className="animate-in fade-in duration-500 mt-0">
+ <RequestDetailsTab />
+ </TabsContent>
+ </Tabs>
+ );
 }
 
 function PeriodSelector() {
-  const [period, setPeriod] = useState("7d");
-  return (
-    <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md border border-border">
-       {PERIODS.map(p => (
-         <Button
-          key={p.value}
-          variant={period === p.value ? "secondary" : "ghost"}
-          size="sm"
-          className={cn(
-            "h-8 px-3 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md", 
-            period === p.value ? "bg-background border border-border/50 shadow-none" : "text-muted-foreground"
-          )}
-          onClick={() => {
-            setPeriod(p.value);
-            window.dispatchEvent(new CustomEvent("usage-period-change", { detail: p.value }));
-          }}
-         >
-           {p.label}
-         </Button>
-       ))}
-    </div>
-  );
+ const [period, setPeriod] = useState("7d");
+ return (
+ <div className="flex items-center gap-1 bg-muted/30 p-0.5 rounded-none border border-border/40">
+ {PERIODS.map(p => (
+ <Button
+ key={p.value}
+ variant={period === p.value ?"secondary":"ghost"}
+ size="sm"
+ className={cn(
+"h-7 px-2.5 text-xs font-semibold capitalize transition-all rounded-none", 
+ period === p.value ?"bg-background border border-border/40 shadow-none":"text-muted-foreground"
+ )}
+ onClick={() => {
+ setPeriod(p.value);
+ window.dispatchEvent(new CustomEvent("usage-period-change", { detail: p.value }));
+ }}
+ >
+ {p.label}
+ </Button>
+ ))}
+ </div>
+ );
 }
 
 function UsageDashboard() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("7d");
-  const [tableView, setTableView] = useState("model");
-  const [viewMode, setViewMode] = useState("costs");
-  const [providers, setProviders] = useState([]);
+ const router = useRouter();
+ const searchParams = useSearchParams();
+ const [stats, setStats] = useState(null);
+ const [loading, setLoading] = useState(true);
+ const [period, setPeriod] = useState("7d");
+ const [tableView, setTableView] = useState("model");
+ const [viewMode, setViewMode] = useState("costs");
+ const [providers, setProviders] = useState([]);
 
-  const sortBy = searchParams.get("sortBy") || "rawModel";
-  const sortOrder = searchParams.get("sortOrder") || "asc";
+ const sortBy = searchParams.get("sortBy") ||"rawModel";
+ const sortOrder = searchParams.get("sortOrder") ||"asc";
 
-  useEffect(() => {
-    fetch("/api/providers")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        const seen = new Set();
-        const unique = (d?.connections || []).filter((c) => {
-          if (seen.has(c.provider)) return false;
-          seen.add(c.provider);
-          return true;
-        });
-        const noAuthProviders = Object.values(FREE_PROVIDERS)
-          .filter((p) => p.noAuth && !seen.has(p.id))
-          .map((p) => ({ provider: p.id, name: p.name }));
-        setProviders([...unique, ...noAuthProviders]);
-      })
-      .catch(() => {});
-  }, []);
+ useEffect(() => {
+ fetch("/api/providers")
+ .then((r) => r.ok ? r.json() : null)
+ .then((d) => {
+ const seen = new Set();
+ const unique = (d?.connections || []).filter((c) => {
+ if (seen.has(c.provider)) return false;
+ seen.add(c.provider);
+ return true;
+ });
+ const noAuthProviders = Object.values(FREE_PROVIDERS)
+ .filter((p) => p.noAuth && !seen.has(p.id))
+ .map((p) => ({ provider: p.id, name: p.name }));
+ setProviders([...unique, ...noAuthProviders]);
+ })
+ .catch(() => {});
+ }, []);
 
-  useEffect(() => {
-    const handlePeriodChange = (e) => setPeriod(e.detail);
-    window.addEventListener("usage-period-change", handlePeriodChange);
-    return () => window.removeEventListener("usage-period-change", handlePeriodChange);
-  }, []);
+ useEffect(() => {
+ const handlePeriodChange = (e) => setPeriod(e.detail);
+ window.addEventListener("usage-period-change", handlePeriodChange);
+ return () => window.removeEventListener("usage-period-change", handlePeriodChange);
+ }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/usage/stats?period=${period}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data) setStats((prev) => ({ ...prev, ...data }));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [period]);
+ useEffect(() => {
+ setLoading(true);
+ fetch(`/api/usage/stats?period=${period}`)
+ .then((r) => r.ok ? r.json() : null)
+ .then((data) => {
+ if (data) setStats((prev) => ({ ...prev, ...data }));
+ })
+ .catch(() => {})
+ .finally(() => setLoading(false));
+ }, [period]);
 
-  useEffect(() => {
-    const es = new EventSource("/api/usage/stream");
-    es.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setStats((prev) => ({
-          ...(prev || {}),
-          activeRequests: data.activeRequests,
-          recentRequests: data.recentRequests,
-          errorProvider: data.errorProvider,
-          pending: data.pending,
-        }));
-      } catch (err) { console.error(err); }
-    };
-    return () => es.close();
-  }, []);
+ useEffect(() => {
+ const es = new EventSource("/api/usage/stream");
+ es.onmessage = (e) => {
+ try {
+ const data = JSON.parse(e.data);
+ setStats((prev) => ({
+ ...(prev || {}),
+ activeRequests: data.activeRequests,
+ recentRequests: data.recentRequests,
+ errorProvider: data.errorProvider,
+ pending: data.pending,
+ }));
+ } catch (err) { console.error(err); }
+ };
+ return () => es.close();
+ }, []);
 
-  const toggleSort = useCallback((tableType, field) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (params.get("sortBy") === field) {
-      params.set("sortOrder", params.get("sortOrder") === "asc" ? "desc" : "asc");
-    } else {
-      params.set("sortBy", field);
-      params.set("sortOrder", "asc");
-    }
-    router.replace(`?${params.toString()}`, { scroll: false });
-  }, [searchParams, router]);
+ const toggleSort = useCallback((tableType, field) => {
+ const params = new URLSearchParams(searchParams.toString());
+ if (params.get("sortBy") === field) {
+ params.set("sortOrder", params.get("sortOrder") ==="asc"?"desc":"asc");
+ } else {
+ params.set("sortBy", field);
+ params.set("sortOrder","asc");
+ }
+ router.replace(`?${params.toString()}`, { scroll: false });
+ }, [searchParams, router]);
 
-  if (loading && !stats) return <UsageLoadingState />;
+ if (loading && !stats) return <UsageLoadingState />;
 
-  return (
-    <div className="space-y-8">
-      {/* 1. KPI Pulse Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPIItem label="Tổng số yêu cầu" value={fmt(stats?.totalRequests)} icon={Zap} trend="" />
-        <KPIItem label="Chi phí ước tính" value={`$${(stats?.totalCost || 0).toFixed(4)}`} icon={Database} trend="" />
-        <KPIItem label="Lượng Token" value={fmt((stats?.totalPromptTokens || 0) + (stats?.totalCompletionTokens || 0))} icon={Activity} />
-        <KPIItem label="Luồng trực tiếp" value={stats?.activeRequests?.length || 0} icon={Network} />
-      </div>
+ return (
+ <div className="space-y-4">
+ {/* 1. KPI Pulse Section */}
+ <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+ <KPIItem label="Requests"value={fmt(stats?.totalRequests)} icon={Zap} />
+ <KPIItem label="Estimated Cost"value={`$${(stats?.totalCost || 0).toFixed(4)}`} icon={Database} />
+ <KPIItem label="Token Volume"value={fmt((stats?.totalPromptTokens || 0) + (stats?.totalCompletionTokens || 0))} icon={Activity} />
+ <KPIItem label="Active Streams"value={stats?.activeRequests?.length || 0} icon={Network} />
+ </div>
 
-      {/* 2. Live Operations Grid */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Topology Card */}
-        <Card className="lg:col-span-8 shadow-sm border-border/50 p-0 overflow-hidden bg-background/50">
-          <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-border/40 bg-muted/10">
-            <div className="space-y-1">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 capitalize">
-                <Network className="size-4 text-primary" />
-                Luồng hạ tầng
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">Trực quan hóa định tuyến lưu lượng nhà cung cấp</CardDescription>
-            </div>
-            <Badge variant="outline" className="h-5 px-2 bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium capitalize">
-              Trực tiếp
-            </Badge>
-          </CardHeader>
-          <CardContent className="p-0 h-[400px]">
-            <ProviderTopology
-              providers={providers}
-              activeRequests={stats?.activeRequests || []}
-              lastProvider={stats?.recentRequests?.[0]?.provider || ""}
-              errorProvider={stats?.errorProvider || ""}
-            />
-          </CardContent>
-        </Card>
+ {/* 2. Live Operations Grid */}
+ <div className="grid gap-4 lg:grid-cols-12">
+ {/* Topology Card */}
+ <Card className="lg:col-span-8 border-border/40 bg-background/50 shadow-none overflow-hidden flex flex-col h-[420px]">
+ <CardHeader className="flex flex-row items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/10 shrink-0">
+ <div className="flex items-center gap-2">
+ <Network className="size-3.5 text-primary" weight="bold"/>
+ <CardTitle className="text-xs font-semibold capitalize">Infrastructure Flow</CardTitle>
+ </div>
+ <Badge variant="outline" className="h-4 px-1 bg-primary/10 text-primary border-primary/20 text-[10px] font-semibold capitalize rounded-none">
+ Live
+ </Badge>
+ </CardHeader>
+ <CardContent className="p-0 flex-1 min-h-0">
+ <ProviderTopology
+ providers={providers}
+ activeRequests={stats?.activeRequests || []}
+ lastProvider={stats?.recentRequests?.[0]?.provider ||""}
+ errorProvider={stats?.errorProvider ||""}
+ />
+ </CardContent>
+ </Card>
 
-        {/* Live Feed Card */}
-        <Card className="lg:col-span-4 shadow-none border-border overflow-hidden flex flex-col h-[482px] p-0">
-          <CardHeader className="p-4 border-b border-border bg-muted/20">
-             <CardTitle className="text-sm font-bold flex items-center gap-2">
-               <History className="size-4 text-primary" />
-               Recent Activity
-             </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 flex-1 min-h-0">
-             <RecentActivityList requests={stats?.recentRequests || []} />
-          </CardContent>
-          <CardFooter className="p-2 border-t border-border shrink-0 bg-muted/5">
-             <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground group" render={
-               <a href="/dashboard/usage?tab=details">
-                 Traffic Inspector <ChevronRight className="ml-1 size-3 group-hover:translate-x-1 transition-transform" />
-               </a>
-             } />
-          </CardFooter>
-        </Card>
-      </div>
+ {/* Live Feed Card */}
+ <Card className="lg:col-span-4 border-border/40 bg-background/50 shadow-none overflow-hidden flex flex-col h-[420px] p-0">
+ <CardHeader className="flex flex-row items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/10 shrink-0">
+ <div className="flex items-center gap-2">
+ <History className="size-3.5 text-primary" weight="bold"/>
+ <CardTitle className="text-xs font-semibold capitalize">Recent Activity</CardTitle>
+ </div>
+ </CardHeader>
+ <CardContent className="p-0 flex-1 min-h-0">
+ <RecentActivityList requests={stats?.recentRequests || []} />
+ </CardContent>
+ <CardFooter className="p-1 border-t border-border/40 shrink-0 bg-muted/5">
+ <a 
+ href="/dashboard/usage?tab=details"
+ className={cn(
+ buttonVariants({ variant: "ghost", size: "sm" }),
+ "w-full h-6 text-xs font-semibold capitalize text-muted-foreground group rounded-none"
+ )}
+ >
+ Traffic Inspector <ChevronRight className="ml-1 size-2.5 group-hover:translate-x-0.5 transition-transform"/>
+ </a>
+ </CardFooter>
+ </Card>
+ </div>
 
-      {/* 3. Deep Analysis Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-primary/10 rounded-lg text-primary">
-               <TrendingUp className="size-5" />
-             </div>
-             <div>
-                <h3 className="text-xl font-bold tracking-tight">System Performance</h3>
-                <p className="text-xs text-muted-foreground">Historical breakdown and dimensional analysis</p>
-             </div>
-          </div>
-          
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-md border border-border">
-            <Button 
-              variant={viewMode === "costs" ? "secondary" : "ghost"} 
-              size="sm" 
-              className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-md"
-              onClick={() => setViewMode("costs")}
-            >
-              Costs
-            </Button>
-            <Button 
-              variant={viewMode === "tokens" ? "secondary" : "ghost"} 
-              size="sm" 
-              className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-md"
-              onClick={() => setViewMode("tokens")}
-            >
-              Tokens
-            </Button>
-          </div>
+ {/* 3. Deep Analysis Section */}
+ <div className="space-y-4">
+ <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+ <div className="flex items-center gap-3">
+ <div className="p-1.5 bg-primary/10 text-primary border border-primary/20">
+ <TrendingUp className="size-4" weight="bold"/>
+ </div>
+ <div>
+ <h3 className="text-lg font-medium tracking-tight">System Performance</h3>
+ <p className="text-xs text-muted-foreground capitalize font-medium">Historical Metrics</p>
+ </div>
+ </div>
+ 
+ <div className="flex items-center gap-1 bg-muted/30 p-0.5 border border-border/40">
+ <Button 
+ variant={viewMode ==="costs"?"secondary":"ghost"} 
+ size="sm"
+ className="h-7 px-3 text-xs font-semibold capitalize rounded-none"
+ onClick={() => setViewMode("costs")}
+ >
+ Costs
+ </Button>
+ <Button 
+ variant={viewMode ==="tokens"?"secondary":"ghost"} 
+ size="sm"
+ className="h-7 px-3 text-xs font-semibold capitalize rounded-none"
+ onClick={() => setViewMode("tokens")}
+ >
+ Tokens
+ </Button>
+ </div>
+ </div>
+
+ <Card className="border-border/40 bg-background/50 shadow-none overflow-hidden p-0">
+      <CardHeader className="flex flex-row items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="size-3.5 text-primary" weight="bold"/>
+          <CardTitle className="text-xs font-semibold capitalize">Dimensional Analytics</CardTitle>
         </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-6">
+        <UsageChart period={period} />
+      </CardContent>
+    </Card>
 
-        <Card className="shadow-none border-border overflow-hidden p-0">
-          <CardHeader className="p-4 border-b border-border bg-muted/20">
-             <CardTitle className="text-sm font-bold flex items-center gap-2">
-               <BarChart3 className="size-4 text-primary" />
-               Performance Metrics
-             </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 pb-4">
-            <UsageChart period={period} />
-          </CardContent>
-        </Card>
+ <Tabs value={tableView} onValueChange={setTableView} className="space-y-0">
+ <TabsList className="bg-transparent border-b border-border/40 w-full justify-start rounded-none h-auto p-0 gap-6">
+ {[
+ { value:"model", label:"Model", icon: Cpu },
+ { value:"account", label:"Account", icon: ShieldCheck },
+ { value:"apiKey", label:"Credential", icon: Key },
+ { value:"endpoint", label:"Endpoint", icon: Server },
+ ].map(tab => (
+ <TabsTrigger 
+ key={tab.value}
+ value={tab.value} 
+ className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 py-2 text-xs font-semibold capitalize data-[state=active]:shadow-none -mb-px"
+ >
+ <tab.icon className="size-3.5 mr-1.5" weight="bold"/>
+ {tab.label}
+ </TabsTrigger>
+ ))}
+ </TabsList>
 
-        <Tabs value={tableView} onValueChange={setTableView} className="space-y-4">
-          <TabsList className="bg-transparent h-auto p-0 gap-2 border-none">
-            {[
-              { value: "model", label: "Model", icon: Cpu },
-              { value: "account", label: "Account", icon: ShieldCheck },
-              { value: "apiKey", label: "Credential", icon: Key },
-              { value: "endpoint", label: "Endpoint", icon: Server },
-            ].map(tab => (
-              <TabsTrigger 
-                key={tab.value}
-                value={tab.value} 
-                className="h-8 px-4 rounded-md border border-transparent data-[state=active]:border-border data-[state=active]:bg-muted data-[state=active]:shadow-none text-[10px] font-bold uppercase tracking-widest transition-all"
-              >
-                <tab.icon className="size-3 mr-2" />
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <Card className="shadow-none border-border overflow-hidden p-0">
-            <CardContent className="p-0">
-              <UsageTableContainer 
-                stats={stats} 
-                tableView={tableView} 
-                sortBy={sortBy} 
-                sortOrder={sortOrder} 
-                toggleSort={toggleSort}
-                viewMode={viewMode}
-              />
-            </CardContent>
-          </Card>
-        </Tabs>
-      </div>
-    </div>
-  );
+ <Card className="border-border/40 border-t-0 rounded-t-none overflow-hidden p-0 bg-background/50 shadow-none">
+ <CardContent className="p-0">
+ <UsageTableContainer 
+ stats={stats} 
+ tableView={tableView} 
+ sortBy={sortBy} 
+ sortOrder={sortOrder} 
+ toggleSort={toggleSort}
+ viewMode={viewMode}
+ />
+ </CardContent>
+ </Card>
+ </Tabs>
+ </div>
+ </div>
+ );
 }
 
 // --- Helper Components ---
 
-function KPIItem({ label, value, icon: Icon, trend }) {
+function KPIItem({ label, value, icon: Icon }) {
   return (
-    <Card className="shadow-sm border-border/50 bg-background/50 p-0 overflow-hidden hover:bg-muted/10 transition-colors">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 border-b border-border/40 bg-muted/10">
-        <CardTitle className="text-xs font-medium text-foreground capitalize">
+    <Card className="border-border/40 bg-background/50 shadow-none p-0 overflow-hidden hover:bg-muted/5 transition-colors">
+      <CardHeader className="flex flex-row items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/10 shrink-0">
+        <CardTitle className="text-xs font-semibold capitalize">
           {label}
         </CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
+        <Icon className="size-3.5 text-muted-foreground/60" weight="bold"/>
       </CardHeader>
-      <CardContent className="pb-4 pt-3 px-4">
-        <div className="text-2xl font-semibold tracking-tight tabular-nums">{value}</div>
-        {!!trend && (
-          <p className={cn(
-            "text-[10px] font-medium mt-1",
-            trend.startsWith("+") ? "text-emerald-500" : "text-amber-500"
-          )}>
-            {trend} <span className="text-muted-foreground font-normal ml-1">so với kỳ trước</span>
-          </p>
-        )}
+      <CardContent className="pb-3 pt-3 px-3">
+        <div className="text-xl font-semibold tracking-tight tabular-nums">{value}</div>
       </CardContent>
     </Card>
   );
 }
 
 function RecentActivityList({ requests = [] }) {
-  if (!requests.length) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-8 text-center opacity-30">
-         <Activity className="size-10 mb-2" />
-         <p className="text-xs font-bold uppercase tracking-widest">Awaiting traffic...</p>
-      </div>
-    );
-  }
+ if (!requests.length) {
+ return (
+ <div className="flex h-full flex-col items-center justify-center p-8 text-center opacity-20">
+ <Activity className="size-8 mb-2"/>
+ <p className="text-xs font-medium capitalize text-muted-foreground">Idle State</p>
+ </div>
+ );
+ }
 
   return (
     <ScrollArea className="h-full">
-      <div className="divide-y border-t border-border">
+      <div className="divide-y divide-border/20">
         {requests.map((r, i) => {
           const ok = !r.status || r.status === "ok" || r.status === "success";
           return (
-            <div key={i} className="p-4 hover:bg-muted/30 transition-all flex items-start gap-4">
+            <div key={i} className="px-3 py-1.5 hover:bg-muted/30 transition-all flex items-start gap-2.5">
               <div className={cn(
-                "size-1.5 rounded-full mt-2 shrink-0 animate-pulse", 
-                ok ? "bg-emerald-500" : "bg-red-500"
+                "size-1 rounded-full mt-1.5 shrink-0", 
+                ok ? "bg-primary/60" : "bg-destructive/60"
               )} />
-              <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex-1 min-w-0 space-y-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold truncate pr-2">{r.model}</span>
-                  <span className="text-[10px] font-medium text-muted-foreground shrink-0 tabular-nums">
+                  <span className="text-xs font-semibold truncate text-foreground leading-tight">{r.model}</span>
+                  <span className="text-xs font-medium text-muted-foreground/60 shrink-0 tabular-nums uppercase">
                     <TimeAgo timestamp={r.timestamp} />
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-[9px] font-bold border-border bg-muted/50 px-1 h-3.5 uppercase">
+                  <Badge variant="outline" className="text-xs font-medium border-border/40 bg-muted/40 px-1 h-3.5 capitalize rounded-none text-muted-foreground/60">
                     {r.provider}
                   </Badge>
-                  <div className="flex items-center gap-2 text-[10px] font-bold tabular-nums text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs font-medium tabular-nums text-muted-foreground/60">
                     <div className="flex items-center gap-0.5">
-                       <ArrowUp className="size-2.5 opacity-50" />
-                       {fmt(r.promptTokens)}
+                      <ArrowUp className="size-2.5" weight="bold"/>
+                      {fmt(r.promptTokens)}
                     </div>
                     <div className="flex items-center gap-0.5">
-                       <ArrowDown className="size-2.5 opacity-50" />
-                       {fmt(r.completionTokens)}
+                      <ArrowDown className="size-2.5" weight="bold"/>
+                      {fmt(r.completionTokens)}
                     </div>
                   </div>
                 </div>
@@ -441,143 +432,142 @@ function RecentActivityList({ requests = [] }) {
 }
 
 function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, viewMode }) {
-  const config = useMemo(() => {
-    if (!stats) return null;
-    
-    const sortData = (dataMap, pendingMap = {}, sBy, sOrder) => {
-      return Object.entries(dataMap || {})
-        .map(([key, data]) => ({ 
-          ...data, 
-          key, 
-          totalTokens: (data.promptTokens || 0) + (data.completionTokens || 0),
-          pending: pendingMap[key] || 0 
-        }))
-        .sort((a, b) => {
-          let valA = a[sBy];
-          let valB = b[sBy];
-          if (typeof valA === "string") valA = valA.toLowerCase();
-          if (typeof valB === "string") valB = valB.toLowerCase();
-          return valA < valB ? (sOrder === "asc" ? -1 : 1) : (sOrder === "asc" ? 1 : -1);
-        });
-    };
+ const config = useMemo(() => {
+ if (!stats) return null;
+ 
+ const sortData = (dataMap, pendingMap = {}, sBy, sOrder) => {
+ return Object.entries(dataMap || {})
+ .map(([key, data]) => ({ 
+ ...data, 
+ key, 
+ totalTokens: (data.promptTokens || 0) + (data.completionTokens || 0),
+ pending: pendingMap[key] || 0 
+ }))
+ .sort((a, b) => {
+ let valA = a[sBy];
+ let valB = b[sBy];
+ if (typeof valA ==="string") valA = valA.toLowerCase();
+ if (typeof valB ==="string") valB = valB.toLowerCase();
+ return valA < valB ? (sOrder ==="asc"? -1 : 1) : (sOrder ==="asc"? 1 : -1);
+ });
+ };
 
-    const groupDataByKey = (data, keyField) => {
-      const groups = {};
-      data.forEach(item => {
-        const gk = item[keyField] || item.rawModel || "Unknown";
-        if (!groups[gk]) groups[gk] = { groupKey: gk, summary: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, cost: 0, inputCost: 0, outputCost: 0, lastUsed: null }, items: [] };
-        
-        groups[gk].summary.requests += item.requests || 0;
-        groups[gk].summary.promptTokens += item.promptTokens || 0;
-        groups[gk].summary.completionTokens += item.completionTokens || 0;
-        groups[gk].summary.totalTokens += item.totalTokens || ((item.promptTokens || 0) + (item.completionTokens || 0));
-        groups[gk].summary.cost += item.cost || item.totalCost || 0;
-        groups[gk].summary.inputCost += item.inputCost || 0;
-        groups[gk].summary.outputCost += item.outputCost || 0;
-        
-        if (item.lastUsed && (!groups[gk].summary.lastUsed || new Date(item.lastUsed) > new Date(groups[gk].summary.lastUsed))) {
-          groups[gk].summary.lastUsed = item.lastUsed;
-        }
-        groups[gk].items.push(item);
-      });
-      return Object.values(groups);
-    };
+ const groupDataByKey = (data, keyField) => {
+ const groups = {};
+ data.forEach(item => {
+ const gk = item[keyField] || item.rawModel ||"Unknown";
+ if (!groups[gk]) groups[gk] = { groupKey: gk, summary: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, cost: 0, inputCost: 0, outputCost: 0, lastUsed: null }, items: [] };
+ 
+ groups[gk].summary.requests += item.requests || 0;
+ groups[gk].summary.promptTokens += item.promptTokens || 0;
+ groups[gk].summary.completionTokens += item.completionTokens || 0;
+ groups[gk].summary.totalTokens += item.totalTokens || ((item.promptTokens || 0) + (item.completionTokens || 0));
+ groups[gk].summary.cost += item.cost || item.totalCost || 0;
+ groups[gk].summary.inputCost += item.inputCost || 0;
+ groups[gk].summary.outputCost += item.outputCost || 0;
+ 
+ if (item.lastUsed && (!groups[gk].summary.lastUsed || new Date(item.lastUsed) > new Date(groups[gk].summary.lastUsed))) {
+ groups[gk].summary.lastUsed = item.lastUsed;
+ }
+ groups[gk].items.push(item);
+ });
+ return Object.values(groups);
+ };
 
-    const COLUMNS = {
-      model: [{ field: "rawModel", label: "Model" }, { field: "provider", label: "Provider" }, { field: "requests", label: "Requests", align: "right" }, { field: "lastUsed", label: "Activity", align: "right" }],
-      account: [{ field: "accountName", label: "Account" }, { field: "rawModel", label: "Last Model" }, { field: "requests", label: "Requests", align: "right" }, { field: "lastUsed", label: "Activity", align: "right" }],
-      apiKey: [{ field: "keyName", label: "Key" }, { field: "rawModel", label: "Last Model" }, { field: "requests", label: "Requests", align: "right" }, { field: "lastUsed", label: "Activity", align: "right" }],
-      endpoint: [{ field: "endpoint", label: "Endpoint" }, { field: "rawModel", label: "Last Model" }, { field: "requests", label: "Requests", align: "right" }, { field: "lastUsed", label: "Activity", align: "right" }]
-    };
+ const COLUMNS = {
+ model: [{ field:"rawModel", label:"Model"}, { field:"provider", label:"Provider"}, { field:"requests", label:"Requests", align:"right"}, { field:"lastUsed", label:"Activity", align:"right"}],
+ account: [{ field:"accountName", label:"Account"}, { field:"rawModel", label:"Last Model"}, { field:"requests", label:"Requests", align:"right"}, { field:"lastUsed", label:"Activity", align:"right"}],
+ apiKey: [{ field:"keyName", label:"Key"}, { field:"rawModel", label:"Last Model"}, { field:"requests", label:"Requests", align:"right"}, { field:"lastUsed", label:"Activity", align:"right"}],
+ endpoint: [{ field:"endpoint", label:"Endpoint"}, { field:"rawModel", label:"Last Model"}, { field:"requests", label:"Requests", align:"right"}, { field:"lastUsed", label:"Activity", align:"right"}]
+ };
 
-    const viewToField = { model: "rawModel", account: "accountName", apiKey: "keyName", endpoint: "endpoint" };
-    const rawData = stats[tableView === "apiKey" ? "byApiKey" : tableView === "account" ? "byAccount" : tableView === "endpoint" ? "byEndpoint" : "byModel"] || {};
-    const pendingMap = stats.pending?.[tableView === "model" ? "byModel" : "byAccount"] || {};
+ const viewToField = { model:"rawModel", account:"accountName", apiKey:"keyName", endpoint:"endpoint"};
+ const rawData = stats[tableView ==="apiKey"?"byApiKey": tableView ==="account"?"byAccount": tableView ==="endpoint"?"byEndpoint":"byModel"] || {};
+ const pendingMap = stats.pending?.[tableView ==="model"?"byModel":"byAccount"] || {};
 
-    return {
-      columns: COLUMNS[tableView] || COLUMNS.model,
-      groupedData: groupDataByKey(sortData(rawData, pendingMap, sortBy, sortOrder), viewToField[tableView] || "rawModel"),
-      storageKey: `usage-v2-expanded:${tableView}`
-    };
-  }, [stats, tableView, sortBy, sortOrder]);
+ return {
+ columns: COLUMNS[tableView] || COLUMNS.model,
+ groupedData: groupDataByKey(sortData(rawData, pendingMap, sortBy, sortOrder), viewToField[tableView] ||"rawModel"),
+ storageKey: `usage-v2-expanded:${tableView}`
+ };
+ }, [stats, tableView, sortBy, sortOrder]);
 
-  if (!config) return null;
+ if (!config) return null;
 
-  return (
-    <UsageTable
-      title=""
-      columns={config.columns}
-      groupedData={config.groupedData}
-      tableType={tableView}
-      sortBy={sortBy}
-      sortOrder={sortOrder}
-      onToggleSort={toggleSort}
-      viewMode={viewMode}
-      storageKey={config.storageKey}
-      emptyMessage="No data records found for this scope."
+ return (
+ <UsageTable
+ columns={config.columns}
+ groupedData={config.groupedData}
+ tableType={tableView}
+ sortBy={sortBy}
+ sortOrder={sortOrder}
+ onToggleSort={toggleSort}
+ viewMode={viewMode}
+ storageKey={config.storageKey}
+ emptyMessage="No data records found for this scope."
       renderSummaryCells={(group) => (
         <>
-          <td className="px-4 py-3 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">—</td>
-          <td className="px-4 py-3 text-right font-bold tabular-nums">{fmt(group.summary.requests)}</td>
-          <td className="px-4 py-3 text-right text-muted-foreground tabular-nums text-[10px] font-bold uppercase">
+          <td className="px-3 py-2 text-muted-foreground text-xs font-medium capitalize">—</td>
+          <td className="px-3 py-2 text-right font-medium tabular-nums text-xs">{fmt(group.summary.requests)}</td>
+          <td className="px-3 py-2 text-right text-muted-foreground tabular-nums text-xs font-medium capitalize">
             {group.summary.lastUsed ? timeAgo(group.summary.lastUsed) : "Never"}
           </td>
         </>
       )}
       renderDetailCells={(item) => (
         <>
-          <td className="px-4 py-3">
-             <div className="flex flex-col">
-                <span className="font-bold text-xs tracking-tight">{item[tableView === "apiKey" ? "keyName" : tableView === "account" ? "accountName" : tableView === "endpoint" ? "endpoint" : "rawModel"] || "Unknown"}</span>
-                {tableView !== "model" && <span className="text-[10px] font-medium text-muted-foreground/60">{item.rawModel}</span>}
-             </div>
+          <td className="px-3 py-2">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold">{item[tableView === "apiKey" ? "keyName" : tableView === "account" ? "accountName" : tableView === "endpoint" ? "endpoint" : "rawModel"] || "Unknown"}</span>
+              {tableView !== "model" && <span className="text-xs font-medium text-muted-foreground/60">{item.rawModel}</span>}
+            </div>
           </td>
-          <td className="px-4 py-3">
-            <Badge variant="outline" className="text-[9px] font-bold border-border bg-muted/50 px-1.5 h-4 uppercase">
+          <td className="px-3 py-2">
+            <Badge variant="outline" className="text-xs font-medium border-border/40 bg-muted/40 px-1.5 h-4 capitalize rounded-none">
               {item.provider}
             </Badge>
           </td>
-          <td className="px-4 py-3 text-right font-bold tabular-nums">{fmt(item.requests)}</td>
-          <td className="px-4 py-3 text-right text-muted-foreground tabular-nums text-[10px] font-bold uppercase">
+          <td className="px-3 py-2 text-right font-medium tabular-nums text-xs">{fmt(item.requests)}</td>
+          <td className="px-3 py-2 text-right text-muted-foreground tabular-nums text-xs font-medium capitalize">
             {item.lastUsed ? timeAgo(item.lastUsed) : "—"}
           </td>
         </>
       )}
-    />
-  );
+ />
+ );
 }
 
 // --- Utilities ---
 
 function timeAgo(timestamp) {
-  if (!timestamp) return "Chưa từng";
-  const diff = Math.floor((Date.now() - new Date(timestamp)) / 1000);
-  if (diff < 60) return `${diff}s`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}p`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}g`;
-  return `${Math.floor(diff / 86400)}n`;
+ if (!timestamp) return"Never";
+ const diff = Math.floor((Date.now() - new Date(timestamp)) / 1000);
+ if (diff < 60) return `${diff}S`;
+ if (diff < 3600) return `${Math.floor(diff / 60)}M`;
+ if (diff < 86400) return `${Math.floor(diff / 3600)}H`;
+ return `${Math.floor(diff / 86400)}D`;
 }
 
 function TimeAgo({ timestamp }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setTick(t => t + 1), 5000);
-    return () => clearInterval(timer);
-  }, []);
-  return <span>{timeAgo(timestamp)} trước</span>;
+ const [, setTick] = useState(0);
+ useEffect(() => {
+ const timer = setInterval(() => setTick(t => t + 1), 5000);
+ return () => clearInterval(timer);
+ }, []);
+ return <span>{timeAgo(timestamp)}</span>;
 }
 
 function UsageLoadingState() {
-  return (
-    <div className="space-y-8 animate-pulse p-6 lg:p-10 pt-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-12 h-[400px]">
-         <Skeleton className="lg:col-span-8 rounded-lg" />
-         <Skeleton className="lg:col-span-4 rounded-lg" />
-      </div>
-      <Skeleton className="h-64 w-full rounded-lg" />
-    </div>
-  );
+ return (
+ <div className="mx-auto max-w-6xl flex flex-col gap-4 p-4 lg:p-6 animate-pulse">
+ <div className="grid gap-3 md:grid-cols-4">
+ {[1,2,3,4].map(i => <Skeleton key={i} className="h-20 w-full rounded-none"/>)}
+ </div>
+ <div className="grid gap-4 lg:grid-cols-12 h-[420px]">
+ <Skeleton className="lg:col-span-8 rounded-none"/>
+ <Skeleton className="lg:col-span-4 rounded-none"/>
+ </div>
+ <Skeleton className="h-48 w-full rounded-none"/>
+ </div>
+ );
 }
