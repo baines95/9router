@@ -2,20 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo } from"react";
 import { 
- Plus, 
- Layers, 
- Copy, 
- Check, 
- Edit2, 
- Trash2, 
- ArrowUp, 
- ArrowDown, 
- X,
- Search,
- Zap,
- Info
-} from"lucide-react";
-import { cn } from"@/lib/utils";
+  Plus, 
+  Stack, 
+  Copy, 
+  Check, 
+  PencilSimple, 
+  Trash, 
+  ArrowUp, 
+  ArrowDown, 
+  X,
+  MagnifyingGlass,
+  Lightning,
+  Info
+} from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { Badge } from"@/components/ui/badge";
 import { Button } from"@/components/ui/button";
 import { 
@@ -130,7 +130,7 @@ export default function CombosPageClient({ initialData }) {
  <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
  <div className="space-y-1">
  <div className="flex items-center gap-2 text-muted-foreground font-medium text-xs uppercase tracking-tight">
- <Layers className="size-4"/>
+ <Stack className="size-4"/>
  Infrastructure
  </div>
  <h1 className="text-3xl font-medium tracking-tight">Model Combos</h1>
@@ -148,7 +148,7 @@ export default function CombosPageClient({ initialData }) {
  <div className="grid gap-4">
  {combos.length === 0 ? (
  <Card className="border-border/50 border-dashed bg-muted/5 py-20 text-center flex flex-col items-center justify-center opacity-30">
- <Layers className="size-12 mb-3"/>
+ <Stack className="size-12 mb-3"/>
  <p className="text-sm font-medium uppercase tracking-tight">No combos configured</p>
  </Card>
  ) : (
@@ -195,7 +195,7 @@ function ComboCard({ combo, copied, onCopy, onEdit, onDelete, roundRobinEnabled,
  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4">
  <div className="flex items-center gap-4 min-w-0 flex-1">
  <div className="size-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
- <Layers className="size-5 text-primary"/>
+ <Stack className="size-5 text-primary"/>
  </div>
  <div className="min-w-0 flex-1 space-y-1">
  <div className="flex items-center gap-2">
@@ -228,10 +228,10 @@ function ComboCard({ combo, copied, onCopy, onEdit, onDelete, roundRobinEnabled,
  {copied === `combo-${combo.id}` ? <Check className="size-3.5 text-primary"/> : <Copy className="size-3.5"/>}
  </Button>
  <Button variant="ghost"size="icon"className="size-8 hover:bg-primary/5 text-muted-foreground hover:text-primary"onClick={onEdit}>
- <Edit2 className="size-3.5"/>
+ <PencilSimple className="size-3.5"/>
  </Button>
  <Button variant="ghost"size="icon"className="size-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"onClick={onDelete}>
- <Trash2 className="size-3.5"/>
+ <Trash className="size-3.5"/>
  </Button>
  </div>
  </div>

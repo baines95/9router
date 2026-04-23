@@ -277,32 +277,76 @@ export default function ProvidersPage() {
 
  return (
  <TooltipProvider>
- <div className="mx-auto flex max-w-7xl flex-col gap-6 pb-10 px-4 lg:px-6">
+ <div className="mx-auto flex max-w-6xl flex-col gap-4 py-4 px-4">
  
- {/* Minimalist Header */}
- <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8">
- <div className="space-y-1">
- <div className="flex items-center gap-2">
- <Badge variant="secondary" className="font-medium text-[10px] uppercase tracking-wider px-1.5 py-0 h-4.5 border-border/40 bg-muted/10">
- Infrastructure
- </Badge>
- <Separator orientation="vertical" className="h-2.5 bg-border/40"/>
- <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Service Mesh</span>
- <Separator orientation="vertical" className="h-2.5 bg-border/40"/>
- <ModelAvailabilityBadge />
+ {/* Page Header */}
+ <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-border/50">
+ <div className="space-y-0.5">
+ <div className="flex items-center gap-1.5 text-muted-foreground font-medium text-[10px] uppercase tracking-wider">
+ <ServerIcon className="size-3.5" weight="bold"/>
+ Dịch vụ chính
  </div>
- <h1 className="text-2xl font-medium tracking-tight text-foreground">AI Providers</h1>
- <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
- Manage your model providers, API credentials, and connectivity status across the network.
+ <h1 className="text-xl font-semibold tracking-tight">Providers</h1>
+ <p className="text-xs text-muted-foreground font-medium">
+ {translate("Manage your model providers, API credentials, and connectivity status across the network.")}
  </p>
  </div>
 
  <div className="flex items-center gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-7 text-[10px] font-bold uppercase tracking-wider px-2.5"
+ onClick={() => handleBatchTest("all")}
+ disabled={!!testingMode}
+ >
+ {testingMode ==="all"?(
+ <RefreshCw className="size-3 mr-1.5 animate-spin" weight="bold"/>
+ ):(
+ <Play className="size-3 mr-1.5" weight="bold"/>
+ )}
+ Batch Test
+ </Button>
+ </div>
+ </header>
+
+ {/* Filter Bar */}
+ <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+ <div className="flex items-center gap-0.5 bg-muted/30 p-0.5 border border-border/50 rounded-lg w-full md:w-auto overflow-x-auto no-scrollbar">
+ {CATEGORIES.map((cat) => (
+ <button
+ key={cat.id}
+ onClick={() => setActiveCategory(cat.id)}
+ className={cn(
+ "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all shrink-0",
+ activeCategory === cat.id
+ ? "bg-background text-foreground shadow-sm border border-border/50"
+ : "text-muted-foreground hover:text-foreground"
+ )}
+ >
+ <cat.icon className="size-3" weight={activeCategory === cat.id ?"fill":"bold"}/>
+ {cat.label}
+ </button>
+ ))}
+ </div>
+
+ <div className="relative w-full md:w-64 group">
+ <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground group-focus-within:text-primary transition-colors" weight="bold"/>
+ <Input
+ placeholder="Search providers..."
+ value={searchQuery}
+ onChange={(e) => setSearchQuery(e.target.value)}
+ className="pl-8 h-7 text-[10px] bg-muted/10 border-border/40 focus:bg-background transition-all"
+ />
+ </div>
+ </div>
+
+ {/* Stats Overview */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
  <StatCard label="Active" value={globalStats.active} icon={CheckCircle} color="text-primary"/>
  <StatCard label="Issues" value={globalStats.errors} icon={WarningCircle} color="text-destructive"/>
  <StatCard label="Total" value={globalStats.total} icon={ServerIcon} color="text-foreground/70"/>
  </div>
- </header>
 
  {/* Dynamic Grid */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -429,9 +473,9 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }) {
  "group relative transition-all duration-200 border-border/50 bg-transparent hover:bg-muted/10 shadow-none rounded-lg overflow-hidden h-fit p-0",
  allDisabled && "opacity-50 grayscale"
  )}>
- <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 py-2 border-b border-border/50">
- <div className="flex items-center gap-2.5 min-w-0">
- <div className="size-8 rounded border border-border/40 bg-background flex items-center justify-center p-1.5 shrink-0 group-hover:border-primary/30 transition-colors">
+ <CardHeader className="flex flex-row items-center justify-between space-y-0 px-2.5 py-1.5 border-b border-border/50">
+ <div className="flex items-center gap-2 min-w-0">
+ <div className="size-7 rounded border border-border/40 bg-background flex items-center justify-center p-1 shrink-0 group-hover:border-primary/30 transition-colors">
  <img 
  src={getIconPath()} 
  alt={provider.name} 
@@ -449,10 +493,10 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }) {
  </div>
  </div>
  <div className="min-w-0 flex flex-col">
- <CardTitle className="text-sm font-medium tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
+ <CardTitle className="text-xs font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
  {provider.name}
  </CardTitle>
- <CardDescription className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">
+ <CardDescription className="text-[9px] text-muted-foreground/60 font-medium tracking-wide">
  {provider.authType}
  </CardDescription>
  </div>
@@ -462,52 +506,53 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }) {
  <Switch 
  checked={!allDisabled} 
  onCheckedChange={onToggle} 
- className="scale-[0.6] data-[state=checked]:bg-primary transition-all shrink-0 -mr-1"
+ className="scale-[0.55] data-[state=checked]:bg-primary transition-all shrink-0 -mr-2"
  />
  )}
  </CardHeader>
 
- <CardContent className="px-3 py-2 flex flex-col gap-2">
+ <CardContent className="px-2.5 py-1.5 flex flex-col gap-1.5">
  {/* Info & Actions Row */}
  <div className="flex items-center justify-between">
- <div className="flex items-center gap-2 text-[10px] text-muted-foreground/80 font-medium uppercase tracking-wider">
+ <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/80 font-medium tracking-wide">
  {connected > 0 && !allDisabled && (
- <span className="text-primary/90 font-bold tabular-nums">{connected} {translate("Nodes")}</span>
+ <span className="text-primary/90 font-semibold tabular-nums">{connected} {translate("nodes")}</span>
  )}
  {!allDisabled && isNoAuth && (
- <span className="text-primary font-bold">{translate("Ready")}</span>
+ <span className="text-primary font-semibold">{translate("Ready")}</span>
  )}
  {!allDisabled && total === 0 && (
- <span>{translate("No Connections")}</span>
+ <span>{translate("no connections")}</span>
  )}
  </div>
 
- <div className="flex items-center gap-1.5">
+ <div className="flex items-center gap-1">
  {!allDisabled && total > 0 && (
  <Button
  variant="ghost"
  size="icon"
- className="size-6 rounded-full hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground/50"
+ className="size-5 rounded-full hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground/50"
  onClick={(e) => { e.preventDefault(); onTest(); }}
  disabled={isTesting}
  >
- {isTesting ? <RefreshCw className="size-3 animate-spin"/> : <Play className="size-3" weight="fill" />}
+ {isTesting ? <RefreshCw className="size-2.5 animate-spin"/> : <Play className="size-2.5" weight="fill" />}
  </Button>
  )}
  <Link 
  href={`/dashboard/providers/${provider.id}`} 
- className="text-[10px] font-bold text-muted-foreground/40 hover:text-primary transition-colors uppercase tracking-widest px-1 py-1"
+ className="text-[9px] font-semibold text-muted-foreground/40 hover:text-primary transition-colors tracking-wider px-1 py-0.5 inline-flex items-center gap-0.5"
  >
  {translate("Setup")}
+ <ArrowRight className="size-2" weight="bold" />
  </Link>
  </div>
  </div>
 
  {/* Error Row (if any) */}
  {!allDisabled && error > 0 && (
- <div className="flex items-center gap-1.5 pt-0.5">
- <div className="size-1.5 rounded-full bg-destructive animate-pulse"/>
- <span className="text-[10px] font-bold text-destructive uppercase tracking-widest">{errorCode || error} ERROR</span>
+ <div className="flex items-center gap-1 pt-0.5">
+ <div className="size-1 rounded-full bg-destructive animate-pulse"/>
+ <span className="text-[9px] font-semibold text-destructive tracking-wider truncate">{errorCode || error} error</span>
  </div>
  )}
  </CardContent>
@@ -517,17 +562,18 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }) {
 
 function StatCard({ label, value, icon: Icon, color }) {
  return (
- <Card className="flex items-center gap-3 px-3 py-2 min-w-[110px] border-border/40 shadow-none rounded-xl bg-muted/5">
- <div className={cn("p-1.5 rounded-lg bg-muted/20", color.replace('text-', 'bg-').replace('destructive', 'destructive/10').replace('primary', 'primary/10'))}>
- <Icon className={cn("size-3.5", color)} weight="bold" />
+ <Card className="flex items-center gap-2.5 px-2.5 py-1.5 min-w-[90px] border-border/40 shadow-none rounded-lg bg-muted/5">
+ <div className={cn("p-1.5 rounded-md bg-muted/20", color.replace('text-', 'bg-').replace('destructive', 'destructive/10').replace('primary', 'primary/10'))}>
+ <Icon className={cn("size-3", color)} weight="bold" />
  </div>
  <div className="flex flex-col">
- <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest leading-none mb-1">{label}</span>
- <span className="text-base font-semibold tabular-nums leading-none tracking-tight">{value}</span>
+ <span className="text-[9px] font-medium text-muted-foreground tracking-wide leading-none mb-0.5">{translate(label)}</span>
+ <span className="text-sm font-semibold tabular-nums leading-none tracking-tight">{value}</span>
  </div>
  </Card>
  );
 }
+
 
 function ProvidersLoadingState() {
  return (

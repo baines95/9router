@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from"react";
-import { MITM_TOOLS } from"@/shared/constants/cliTools";
+import { useState, useEffect } from "react";
+import { ShieldCheck } from "@phosphor-icons/react";
+import { translate } from "@/i18n/runtime";
+import { MITM_TOOLS } from "@/shared/constants/cliTools";
 import { getModelsByProviderId } from"@/shared/constants/models";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from"@/shared/constants/providers";
 import { MitmServerCard, MitmToolCard } from"@/app/(dashboard)/dashboard/cli-tools/components";
@@ -75,7 +77,21 @@ export default function MitmPageClient() {
  const mitmTools = Object.entries(MITM_TOOLS);
 
  return (
- <div className="flex flex-col gap-6">
+ <div className="mx-auto max-w-7xl flex flex-col gap-6 py-6 px-4">
+ {/* Page Header */}
+ <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
+ <div className="space-y-1">
+ <div className="flex items-center gap-2 text-muted-foreground font-medium text-xs uppercase tracking-tight">
+ <ShieldCheck className="size-4" weight="bold"/>
+ Phát triển
+ </div>
+ <h1 className="text-3xl font-medium tracking-tight">MITM Proxy</h1>
+ <p className="text-sm text-muted-foreground font-medium">
+ {translate("Intercept CLI tool traffic and route through 8Router.")}
+ </p>
+ </div>
+ </header>
+
  {/* MITM Server Card */}
  <MitmServerCard
  apiKeys={apiKeys}

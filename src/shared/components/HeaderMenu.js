@@ -16,14 +16,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { 
-  LayoutGrid, 
-  History, 
-  Languages, 
+  SquaresFour, 
+  ClockCounterClockwise, 
+  Translate, 
   Sun, 
   Moon, 
-  Monitor, 
-  LogOut 
-} from "lucide-react";
+  Desktop, 
+  SignOut 
+} from "@phosphor-icons/react";
 
 const LOCALE_INFO = {
   "en": { name: "English", flag: "🇺🇸" },
@@ -86,31 +86,31 @@ export default function HeaderMenu({ onLogout }) {
       <DropdownMenu>
         <DropdownMenuTrigger render={
           <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <LayoutGrid className="size-5" />
+            <SquaresFour className="size-5" weight="bold" />
             <span className="sr-only">Menu</span>
           </Button>
         } />
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem onClick={() => setChangelogOpen(true)}>
-            <History className="mr-2 size-4" />
+            <ClockCounterClockwise className="mr-2 size-4" weight="bold" />
             <span>Change Log</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLangOpen(true)}>
-            <Languages className="mr-2 size-4" />
+            <Translate className="mr-2 size-4" weight="bold" />
             <span className="flex-1">Language</span>
             <span className="text-xs text-muted-foreground">{LOCALE_INFO[locale]?.flag}</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => toggleTheme()}>
-            {isDark ? <Sun className="mr-2 size-4" /> : <Moon className="mr-2 size-4" />}
+            {isDark ? <Sun className="mr-2 size-4" weight="bold" /> : <Moon className="mr-2 size-4" weight="bold" />}
             <span>Theme</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setRemoteOpen(true)}>
-            <Monitor className="mr-2 size-4" />
+            <Desktop className="mr-2 size-4" weight="bold" />
             <span>Remote</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-            <LogOut className="mr-2 size-4" />
+            <SignOut className="mr-2 size-4" weight="bold" />
             <span>Logout</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

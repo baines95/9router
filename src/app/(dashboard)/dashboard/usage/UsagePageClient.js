@@ -39,6 +39,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from"@/components/ui/tabs";
 import { Separator } from"@/components/ui/separator";
 import { ScrollArea } from"@/components/ui/scroll-area";
 
+import { translate } from "@/i18n/runtime";
 import RequestDetailsTab from"./components/RequestDetailsTab";
 import ProviderTopology from"./components/ProviderTopology";
 import UsageChart from"./components/UsageChart";
@@ -56,13 +57,17 @@ const PERIODS = [
 
 export default function UsagePage() {
  return (
- <div className="mx-auto max-w-6xl flex flex-col gap-4 p-4 lg:p-6">
+ <div className="mx-auto max-w-7xl flex flex-col gap-6 py-6 px-4">
  {/* Header Section */}
- <header className="flex items-center justify-between border-b border-border/40 pb-4">
+ <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
  <div className="space-y-1">
- <h2 className="text-2xl font-medium tracking-tight">Analytics Hub</h2>
- <p className="text-muted-foreground text-xs">
- Monitor infrastructure usage and traffic in real-time.
+ <div className="flex items-center gap-2 text-muted-foreground font-medium text-xs uppercase tracking-tight">
+ <Activity className="size-4" weight="bold"/>
+ Giám sát
+ </div>
+ <h1 className="text-3xl font-medium tracking-tight">Usage</h1>
+ <p className="text-sm text-muted-foreground font-medium">
+ {translate("Monitor infrastructure usage and traffic in real-time.")}
  </p>
  </div>
  <div className="flex items-center gap-2">

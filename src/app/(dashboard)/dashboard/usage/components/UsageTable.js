@@ -10,9 +10,9 @@ const fmt = (n) => new Intl.NumberFormat().format(n || 0);
 const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
 
 function fmtTime(iso) {
- if (!iso) return"Chưa từng";
+ if (!iso) return "Chưa từng";
  const diffMins = Math.floor((Date.now() - new Date(iso)) / 60000);
- if (diffMins < 1) return"Vừa xong";
+ if (diffMins < 1) return "Vừa xong";
  if (diffMins < 60) return `${diffMins}p trước`;
  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}g trước`;
  return new Date(iso).toLocaleDateString("vi-VN");
@@ -117,17 +117,17 @@ export default function UsageTable({
  }, []);
 
  const valueColumns = useMemo(() => {
- if (viewMode ==="tokens") {
+ if (viewMode === "tokens") {
  return [
- { field:"promptTokens", label:"Token Nhập"},
- { field:"completionTokens", label:"Token Xuất"},
- { field:"totalTokens", label:"Tổng Tokens"},
+ { field: "promptTokens", label: "Token Nhập" },
+ { field: "completionTokens", label: "Token Xuất" },
+ { field: "totalTokens", label: "Tổng Tokens" },
  ];
  }
  return [
- { field:"promptTokens", label:"Phí Đầu vào"},
- { field:"completionTokens", label:"Phí Đầu ra"},
- { field:"cost", label:"Tổng chi phí"},
+ { field: "promptTokens", label: "Phí Đầu vào" },
+ { field: "completionTokens", label: "Phí Đầu ra" },
+ { field: "cost", label: "Tổng chi phí" },
  ];
  }, [viewMode]);
 

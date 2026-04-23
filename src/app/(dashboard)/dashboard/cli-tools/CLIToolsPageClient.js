@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from"react";
+import { Terminal } from "@phosphor-icons/react";
+import { translate } from "@/i18n/runtime";
 import { Skeleton } from"@/components/ui/skeleton";
 import { Badge, CardSkeleton } from"@/shared/components";
 import { CLI_TOOLS } from"@/shared/constants/cliTools";
@@ -194,18 +196,22 @@ export default function CLIToolsPageClient({ machineId }) {
  const mitmTools = Object.entries(MITM_TOOLS);
 
  return (
- <div className="mx-auto max-w-7xl flex flex-col gap-8 pb-10 px-4">
- <header className="py-6 space-y-1">
- <div className="flex items-center gap-2 mb-1">
- <Badge variant="outline"className="bg-primary/5 text-primary border-primary/10 font-medium px-2 py-0 h-5 text-xs tracking-tight uppercase">
- Environment
- </Badge>
+ <div className="mx-auto max-w-7xl flex flex-col gap-6 py-6 px-4">
+ {/* Page Header */}
+ <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
+ <div className="space-y-1">
+ <div className="flex items-center gap-2 text-muted-foreground font-medium text-xs uppercase tracking-tight">
+ <Terminal className="size-4" weight="bold"/>
+ Phát triển
  </div>
- <h1 className="text-3xl font-extrabold tracking-tight">CLI Tools</h1>
- <p className="text-sm text-muted-foreground font-medium">Cấu hình các công cụ CLI như Claude Code, Cursor, v.v. để sử dụng với 8router.</p>
+ <h1 className="text-3xl font-medium tracking-tight">CLI Tools</h1>
+ <p className="text-sm text-muted-foreground font-medium">
+ {translate("Configure CLI tools like Claude Code, Cursor, etc. to use with 8Router.")}
+ </p>
+ </div>
  </header>
 
- <div className="flex flex-col gap-8">
+ <div className="flex flex-col gap-8 mt-4">
  <section className="space-y-4">
  <div className="flex items-center gap-2 px-1">
  <span className="text-xs font-medium uppercase tracking-tight text-muted-foreground/50">Phổ biến</span>

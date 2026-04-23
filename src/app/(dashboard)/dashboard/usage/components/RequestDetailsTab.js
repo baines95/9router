@@ -134,16 +134,16 @@ export default function RequestDetailsTab() {
  <CardContent className="p-3 flex flex-wrap items-center gap-3">
  <div className="flex items-center gap-2">
  <Filter className="size-3.5 text-muted-foreground" weight="bold"/>
- <span className="text-xs font-semibold text-foreground capitalize mr-2">Filters</span>
+ <span className="text-xs font-semibold text-foreground capitalize mr-2">Bộ lọc</span>
  </div>
 
  <Select value={filters.provider} onValueChange={v => setFilters({ ...filters, provider: v })}>
- <SelectTrigger className="h-8 text-xs font-semibold capitalize w-[180px] bg-background/50 border-border/40"><SelectValue placeholder="All Providers"/></SelectTrigger>
+ <SelectTrigger className="h-8 text-xs font-semibold capitalize w-[180px] bg-background/50 border-border/40"><SelectValue placeholder="Tất cả Providers"/></SelectTrigger>
  <SelectContent>{providers.map(p => <SelectItem key={p.id} value={p.id} className="text-xs font-medium">{p.name}</SelectItem>)}</SelectContent>
  </Select>
 
  <Input type="datetime-local"value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="h-8 text-xs w-[180px] bg-background/50 font-mono border-border/40"/>
- <span className="text-muted-foreground text-xs font-medium">To</span>
+ <span className="text-muted-foreground text-xs font-medium">Đến</span>
  <Input type="datetime-local"value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="h-8 text-xs w-[180px] bg-background/50 font-mono border-border/40"/>
 
  <Button variant="ghost"size="sm"className="h-8 text-xs font-semibold capitalize ml-auto"onClick={() => setFilters({ provider:"", startDate:"", endDate:""})} disabled={!filters.provider && !filters.startDate && !filters.endDate}>
@@ -157,22 +157,23 @@ export default function RequestDetailsTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/10 border-b border-border/40 text-xs font-semibold capitalize text-muted-foreground">
-              <tr>
-                <th className="text-left px-3 py-2">Timestamp</th>
-                <th className="text-left px-3 py-2">Model Pipeline</th>
-                <th className="text-left px-3 py-2">Provider</th>
-                <th className="text-right px-3 py-2">Input</th>
-                <th className="text-right px-3 py-2">Output</th>
-                <th className="text-left px-3 py-2">Latency (TTFT/Total)</th>
-                <th className="text-center px-3 py-2">Inspection</th>
-              </tr>
+            <tr>
+            <th className="text-left px-3 py-2">Thời gian</th>
+            <th className="text-left px-3 py-2">Model Pipeline</th>
+            <th className="text-left px-3 py-2">Provider</th>
+            <th className="text-right px-3 py-2">Input</th>
+            <th className="text-right px-3 py-2">Output</th>
+            <th className="text-left px-3 py-2">Độ trễ (TTFT/Tổng)</th>
+            <th className="text-center px-3 py-2">Chi tiết</th>
+            </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {loading ? (
-                <tr><td colSpan="7" className="px-3 py-20 text-center text-muted-foreground"><RefreshCw className="size-6 animate-spin mx-auto mb-2 opacity-20"/><p className="text-xs font-medium capitalize">Hydrating data logs...</p></td></tr>
-              ) : details.length === 0 ? (
-                <tr><td colSpan="7" className="px-3 py-20 text-center opacity-20 text-xs font-medium capitalize">No traffic logs found</td></tr>
-              ) : details.map((d, i) => (
+            {loading ? (
+            <tr><td colSpan="7" className="px-3 py-20 text-center text-muted-foreground"><RefreshCw className="size-6 animate-spin mx-auto mb-2 opacity-20"/><p className="text-xs font-medium capitalize">Đang tải dữ liệu log...</p></td></tr>
+            ) : details.length === 0 ? (
+            <tr><td colSpan="7" className="px-3 py-20 text-center opacity-20 text-xs font-medium capitalize">Không tìm thấy traffic logs</td></tr>
+            ) : details.map((d, i) => (
+
                 <tr key={`${d.id}-${i}`} className="hover:bg-muted/30 transition-colors group">
                   <td className="px-3 py-2 text-xs font-medium tabular-nums text-muted-foreground/60">{new Date(d.timestamp).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
                   <td className="px-3 py-2 font-mono font-semibold text-xs">{d.model}</td>
@@ -203,10 +204,10 @@ export default function RequestDetailsTab() {
  {/* Basic Pagination (To be replaced by standardized component if exists) */}
  {!loading && details.length > 0 && (
  <div className="p-3 border-t border-border/40 bg-muted/5 flex items-center justify-between">
- <span className="text-xs font-semibold capitalize text-muted-foreground">Page {pagination.page} of {pagination.totalPages}</span>
+ <span className="text-xs font-semibold capitalize text-muted-foreground">Trang {pagination.page} / {pagination.totalPages}</span>
  <div className="flex gap-2">
- <Button variant="outline" size="sm" className="h-7 text-xs font-semibold capitalize rounded-none" onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))} disabled={pagination.page <= 1}>PREV</Button>
- <Button variant="outline" size="sm" className="h-7 text-xs font-semibold capitalize rounded-none" onClick={() => setPagination(p => ({ ...p, page: Math.min(pagination.totalPages, p.page + 1) }))} disabled={pagination.page >= pagination.totalPages}>NEXT</Button>
+ <Button variant="outline" size="sm" className="h-7 text-xs font-semibold capitalize rounded-none" onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))} disabled={pagination.page <= 1}>TRƯỚC</Button>
+ <Button variant="outline" size="sm" className="h-7 text-xs font-semibold capitalize rounded-none" onClick={() => setPagination(p => ({ ...p, page: Math.min(pagination.totalPages, p.page + 1) }))} disabled={pagination.page >= pagination.totalPages}>SAU</Button>
  </div>
  </div>
  )}
@@ -220,8 +221,8 @@ export default function RequestDetailsTab() {
  <History className="size-3.5" weight="bold"/>
  <span className="text-xs font-semibold capitalize">Transaction Log</span>
  </div>
- <SheetTitle className="text-xl font-semibold tracking-tight">Request Details</SheetTitle>
- <SheetDescription className="text-xs text-muted-foreground">Inspect routing logic and API responses.</SheetDescription>
+ <SheetTitle className="text-xl font-semibold tracking-tight">Chi tiết yêu cầu</SheetTitle>
+ <SheetDescription className="text-xs text-muted-foreground">Kiểm tra logic định tuyến và phản hồi API.</SheetDescription>
  </SheetHeader>
 
  <ScrollArea className="flex-1">
@@ -271,7 +272,7 @@ export default function RequestDetailsTab() {
  <pre className="p-4 rounded-xl bg-muted/30 border border-border/40 text-xs leading-relaxed font-mono text-muted-foreground/80 dark:text-muted-foreground/80 whitespace-pre-wrap">{selectedDetail.response.thinking}</pre>
  </div>
  )}
- <CodeBlock content={selectedDetail.response?.content ||"[No Content]"} />
+ <CodeBlock content={selectedDetail.response?.content ||"[Không có nội dung]"} />
  </CollapsibleSection>
  </div>
  </div>

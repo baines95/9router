@@ -1,27 +1,39 @@
 "use client";
 
 import { useState, useEffect, useRef } from"react";
-import { Card, Button, Toggle, Input } from"@/shared/components";
-import { useTheme } from"@/shared/hooks/useTheme";
-import { cn } from"@/shared/utils/cn";
-import { APP_CONFIG } from"@/shared/constants/config";
+import { 
+  Desktop, 
+  Sun, 
+  Moon, 
+  CircleHalf, 
+  Shield, 
+  Signpost, 
+  WifiHigh, 
+  Activity,
+  Download,
+  Upload
+} from "@phosphor-icons/react";
+import { Card, Button, Toggle, Input } from "@/shared/components";
+import { useTheme } from "@/shared/hooks/useTheme";
+import { cn } from "@/shared/utils/cn";
+import { APP_CONFIG } from "@/shared/constants/config";
 
 export default function ProfilePageClient({ initialData }) {
  const { theme, setTheme, isDark } = useTheme();
- const [settings, setSettings] = useState(initialData?.settings || { fallbackStrategy:"fill-first"});
+ const [settings, setSettings] = useState(initialData?.settings || { fallbackStrategy: "fill-first" });
  const [loading, setLoading] = useState(false);
- const [passwords, setPasswords] = useState({ current:"", new:"", confirm:""});
- const [passStatus, setPassStatus] = useState({ type:"", message:""});
+ const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+ const [passStatus, setPassStatus] = useState({ type: "", message: "" });
  const [passLoading, setPassLoading] = useState(false);
  const [dbLoading, setDbLoading] = useState(false);
- const [dbStatus, setDbStatus] = useState({ type:"", message:""});
+ const [dbStatus, setDbStatus] = useState({ type: "", message: "" });
  const importFileRef = useRef(null);
  const [proxyForm, setProxyForm] = useState({
  outboundProxyEnabled: initialData?.settings?.outboundProxyEnabled === true,
- outboundProxyUrl: initialData?.settings?.outboundProxyUrl ||"",
- outboundNoProxy: initialData?.settings?.outboundNoProxy ||"",
+ outboundProxyUrl: initialData?.settings?.outboundProxyUrl || "",
+ outboundNoProxy: initialData?.settings?.outboundNoProxy || "",
  });
- const [proxyStatus, setProxyStatus] = useState({ type:"", message:""});
+ const [proxyStatus, setProxyStatus] = useState({ type: "", message: "" });
  const [proxyLoading, setProxyLoading] = useState(false);
  const [proxyTestLoading, setProxyTestLoading] = useState(false);
 
@@ -321,7 +333,7 @@ export default function ProfilePageClient({ initialData }) {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
  <div className="size-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
- <span className="material-symbols-outlined text-2xl">computer</span>
+ <Desktop className="size-6" weight="bold" />
  </div>
  <div>
  <h2 className="text-xl font-semibold">Local Mode</h2>
@@ -336,15 +348,15 @@ export default function ProfilePageClient({ initialData }) {
  type="button"
  onClick={() => setTheme(option)}
  className={cn(
-"flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all",
+ "flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all",
  theme === option
- ?"bg-white dark:bg-white/10 text-text-main"
- :"text-text-muted hover:text-text-main"
+ ? "bg-white dark:bg-white/10 text-text-main"
+ : "text-text-muted hover:text-text-main"
  )}
  >
- <span className="material-symbols-outlined text-[18px]">
- {option ==="light"?"light_mode": option ==="dark"?"dark_mode":"contrast"}
- </span>
+ {option === "light" && <Sun className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
+ {option === "dark" && <Moon className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
+ {option === "system" && <CircleHalf className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
  <span className="capitalize text-sm">{option}</span>
  </button>
  ))}
@@ -360,7 +372,7 @@ export default function ProfilePageClient({ initialData }) {
  <div className="flex flex-wrap gap-2">
  <Button
  variant="secondary"
- icon="download"
+ icon={Download}
  onClick={handleExportDatabase}
  loading={dbLoading}
  >
@@ -368,7 +380,7 @@ export default function ProfilePageClient({ initialData }) {
  </Button>
  <Button
  variant="outline"
- icon="upload"
+ icon={Upload}
  onClick={() => importFileRef.current?.click()}
  disabled={dbLoading}
  >
@@ -394,7 +406,7 @@ export default function ProfilePageClient({ initialData }) {
  <Card>
  <div className="flex items-center gap-3 mb-4">
  <div className="p-2 rounded-lg bg-primary/10 text-primary">
- <span className="material-symbols-outlined text-[20px]">shield</span>
+ <Shield className="size-5" weight="bold" />
  </div>
  <h3 className="text-lg font-semibold">Security</h3>
  </div>
@@ -476,7 +488,7 @@ export default function ProfilePageClient({ initialData }) {
  <Card>
  <div className="flex items-center gap-3 mb-4">
  <div className="p-2 rounded-lg bg-primary/10 text-primary">
- <span className="material-symbols-outlined text-[20px]">route</span>
+ <Signpost className="size-5" weight="bold" />
  </div>
  <h3 className="text-lg font-semibold">Routing Strategy</h3>
  </div>
@@ -543,7 +555,7 @@ export default function ProfilePageClient({ initialData }) {
  <Card>
  <div className="flex items-center gap-3 mb-4">
  <div className="p-2 rounded-lg bg-primary/10 text-primary">
- <span className="material-symbols-outlined text-[20px]">wifi</span>
+ <WifiHigh className="size-5" weight="bold" />
  </div>
  <h3 className="text-lg font-semibold">Network</h3>
  </div>
@@ -614,7 +626,7 @@ export default function ProfilePageClient({ initialData }) {
  <Card>
  <div className="flex items-center gap-3 mb-4">
  <div className="p-2 rounded-lg bg-muted/30 text-muted-foreground">
- <span className="material-symbols-outlined text-[20px]">monitoring</span>
+ <Activity className="size-5" weight="bold" />
  </div>
  <h3 className="text-lg font-semibold">Observability</h3>
  </div>

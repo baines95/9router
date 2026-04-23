@@ -2,6 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
+import { 
+  CircleNotch as Loader2, 
+  ArrowSquareOut as ExternalLink, 
+  CheckCircle,
+  Copy,
+  Check,
+  WarningCircle,
+  ArrowClockwise
+} from "@phosphor-icons/react";
 import { Modal, Button, Input } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 
@@ -37,8 +46,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     }
   }, []);
 
-  // Define all useCallback hooks BEFORE the useEffects that reference them
-
   // Exchange tokens
   const exchangeTokens = useCallback(async (code, state) => {
     if (!authData) return;
@@ -64,7 +71,7 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
       setError(err.message);
       setStep("error");
     }
-  }, [authData, provider, onSuccess]);
+  }, [authData, provider, onSuccess, oauthMeta]);
 
   // Poll for device code token
   const startPolling = useCallback(async (deviceCode, codeVerifier, interval, extraData) => {
@@ -73,18 +80,14 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     const maxAttempts = 60;
 
     for (let i = 0; i < maxAttempts; i++) {
-      // Check if polling should be aborted
       if (pollingAbortRef.current) {
-        console.log("[OAuthModal] Polling aborted");
         setPolling(false);
         return;
       }
 
       await new Promise((r) => setTimeout(r, interval * 1000));
 
-      // Check again after sleep
       if (pollingAbortRef.current) {
-        console.log("[OAuthModal] Polling aborted after sleep");
         setPolling(false);
         return;
       }
@@ -99,7 +102,7 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
         const data = await res.json();
 
         if (data.success) {
-          pollingAbortRef.current = true; // Stop polling immediately
+          pollingAbortRef.current = true;
           setStep("success");
           setPolling(false);
           onSuccess?.();
@@ -132,7 +135,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     try {
       setError(null);
 
-      // Device code flow providers
       const deviceCodeProviders = ["github", "qwen", "kiro", "kimi-coding", "kilocode", "codebuddy"];
       if (deviceCodeProviders.includes(provider)) {
         setIsDeviceCode(true);
@@ -152,7 +154,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
 
         setDeviceData(data);
 
-        // Pass extraData for Kiro (contains _clientId, _clientSecret)
         const extraData = provider === "kiro"
           ? {
               _clientId: data._clientId,
@@ -166,13 +167,11 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
         return;
       }
 
-      // Authorization code flow - build redirect URI (some providers require fixed ports)
       const appPort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
       let redirectUri;
       let codexProxyActive = false;
 
       if (provider === "codex") {
-        // Try to start proxy on fixed port 1455 → redirect callback to app port
         try {
           const proxyRes = await fetch(`/api/oauth/codex/start-proxy?app_port=${appPort}`);
           const proxyData = await proxyRes.json();
@@ -180,13 +179,11 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
         } catch {
           codexProxyActive = false;
         }
-        // Always use fixed port 1455 as redirect_uri (Codex requirement)
         redirectUri = "http://localhost:1455/auth/callback";
       } else {
         redirectUri = `http://localhost:${appPort}/callback`;
       }
 
-      // Build authorize URL, optionally passing provider-specific metadata (e.g. gitlab clientId)
       const authorizeUrl = new URL(`/api/oauth/${provider}/authorize`, window.location.origin);
       authorizeUrl.searchParams.set("redirect_uri", redirectUri);
       if (oauthMeta) {
@@ -199,23 +196,16 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
       setAuthData({ ...data, redirectUri });
 
       if (provider === "codex" && codexProxyActive) {
-        // Proxy active: callback will redirect to app port automatically
         setStep("waiting");
         popupRef.current = window.open(data.authUrl, "oauth_popup", "width=600,height=700");
-        if (!popupRef.current) {
-          setStep("input");
-        }
+        if (!popupRef.current) setStep("input");
       } else if (!isLocalhost || provider === "codex") {
-        // Non-localhost or proxy failed: manual input mode
         setStep("input");
         window.open(data.authUrl, "_blank");
       } else {
-        // Localhost (non-Codex): Open popup and wait for message
         setStep("waiting");
         popupRef.current = window.open(data.authUrl, "oauth_popup", "width=600,height=700");
-        if (!popupRef.current) {
-          setStep("input");
-        }
+        if (!popupRef.current) setStep("input");
       }
     } catch (err) {
       setError(err.message);
@@ -223,7 +213,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     }
   }, [provider, isLocalhost, startPolling, oauthMeta, idcConfig]);
 
-  // Reset state and start OAuth when modal opens
   useEffect(() => {
     if (isOpen && provider) {
       setAuthData(null);
@@ -235,7 +224,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
       pollingAbortRef.current = false;
       startOAuthFlow();
     } else if (!isOpen) {
-      // Abort polling and cleanup proxy when modal closes
       pollingAbortRef.current = true;
       if (provider === "codex") {
         fetch("/api/oauth/codex/stop-proxy").catch(() => {});
@@ -243,44 +231,35 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     }
   }, [isOpen, provider, startOAuthFlow]);
 
-  // Listen for OAuth callback via multiple methods
   useEffect(() => {
     if (!authData) return;
-    callbackProcessedRef.current = false; // Reset when authData changes
+    callbackProcessedRef.current = false;
 
-    // Handler for callback data - only process once
     const handleCallback = async (data) => {
-      if (callbackProcessedRef.current) return; // Already processed
-
+      if (callbackProcessedRef.current) return;
       const { code, state, error: callbackError, errorDescription } = data;
-
       if (callbackError) {
         callbackProcessedRef.current = true;
         setError(errorDescription || callbackError);
         setStep("error");
         return;
       }
-
       if (code) {
         callbackProcessedRef.current = true;
         await exchangeTokens(code, state);
       }
     };
 
-    // Method 1: postMessage from popup
     const handleMessage = (event) => {
-      // Allow messages from same origin or localhost (any port)
       const isLocalhost = event.origin.includes("localhost") || event.origin.includes("127.0.0.1");
       const isSameOrigin = event.origin === window.location.origin;
       if (!isLocalhost && !isSameOrigin) return;
-      
       if (event.data?.type === "oauth_callback") {
         handleCallback(event.data.data);
       }
     };
     window.addEventListener("message", handleMessage);
 
-    // Method 2: BroadcastChannel
     let channel;
     try {
       channel = new BroadcastChannel("oauth_callback");
@@ -289,7 +268,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
       console.log("BroadcastChannel not supported");
     }
 
-    // Method 3: localStorage event
     const handleStorage = (event) => {
       if (event.key === "oauth_callback" && event.newValue) {
         try {
@@ -303,20 +281,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     };
     window.addEventListener("storage", handleStorage);
 
-    // Also check localStorage on mount (in case callback already happened)
-    try {
-      const stored = localStorage.getItem("oauth_callback");
-      if (stored) {
-        const data = JSON.parse(stored);
-        if (data.timestamp && Date.now() - data.timestamp < 30000) {
-          handleCallback(data);
-        }
-        localStorage.removeItem("oauth_callback");
-      }
-    } catch {
-      // localStorage may be unavailable or data may be malformed - ignore silently
-    }
-
     return () => {
       window.removeEventListener("message", handleMessage);
       window.removeEventListener("storage", handleStorage);
@@ -324,7 +288,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     };
   }, [authData, exchangeTokens]);
 
-  // Handle manual URL input
   const handleManualSubmit = async () => {
     try {
       setError(null);
@@ -332,15 +295,8 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
       const code = url.searchParams.get("code");
       const state = url.searchParams.get("state");
       const errorParam = url.searchParams.get("error");
-
-      if (errorParam) {
-        throw new Error(url.searchParams.get("error_description") || errorParam);
-      }
-
-      if (!code) {
-        throw new Error("No authorization code found in URL");
-      }
-
+      if (errorParam) throw new Error(url.searchParams.get("error_description") || errorParam);
+      if (!code) throw new Error("No authorization code found in URL");
       await exchangeTokens(code, state);
     } catch (err) {
       setError(err.message);
@@ -348,7 +304,6 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
     }
   };
 
-  // Clear session on modal close + cleanup proxy
   const handleClose = useCallback(() => {
     if (provider === "codex") {
       fetch("/api/oauth/codex/stop-proxy").catch(() => {});
@@ -362,25 +317,21 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
   return (
     <Modal isOpen={isOpen} title={`Connect ${providerInfo.name}`} onClose={handleClose} size="lg">
       <div className="flex flex-col gap-4">
-        {/* Waiting Step (Localhost - popup mode) */}
         {step === "waiting" && !isDeviceCode && (
           <div className="text-center py-6">
             <div className="size-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl text-primary animate-spin">
-                progress_activity
-              </span>
+              <Loader2 className="size-8 text-primary animate-spin" weight="bold" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Waiting for Authorization</h3>
             <p className="text-sm text-text-muted mb-4">
               Complete the authorization in the popup window.
             </p>
-            <Button variant="ghost" onClick={() => setStep("input")}>
+            <Button variant="ghost" onClick={() => setStep("input")} className="w-full">
               Popup blocked? Enter URL manually
             </Button>
           </div>
         )}
 
-        {/* Device Code Flow - Waiting */}
         {step === "waiting" && isDeviceCode && deviceData && (
           <>
             <div className="text-center py-4">
@@ -394,14 +345,14 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
                   <Button
                     size="sm"
                     variant="ghost"
-                    icon={copied === "login_url" ? "check" : "content_copy"}
+                    icon={copied === "login_url" ? Check : Copy}
                     onClick={() => copy(deviceLoginUrl, "login_url")}
                     disabled={!deviceLoginUrl}
                   />
                   <Button
                     size="sm"
                     variant="ghost"
-                    icon="open_in_new"
+                    icon={ExternalLink}
                     onClick={() => window.open(deviceLoginUrl, "_blank", "noopener,noreferrer")}
                     disabled={!deviceLoginUrl}
                   >
@@ -416,7 +367,7 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
                   <Button
                     size="sm"
                     variant="ghost"
-                    icon={copied === "user_code" ? "check" : "content_copy"}
+                    icon={copied === "user_code" ? Check : Copy}
                     onClick={() => copy(deviceData.user_code, "user_code")}
                   />
                 </div>
@@ -424,81 +375,76 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
             </div>
             {polling && (
               <div className="flex items-center justify-center gap-2 text-sm text-text-muted">
-                <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                <Loader2 className="size-4 animate-spin" weight="bold" />
                 Waiting for authorization...
               </div>
             )}
           </>
         )}
 
-        {/* Manual Input Step */}
         {step === "input" && !isDeviceCode && (
-          <>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Step 1: Open this URL in your browser</p>
-                <div className="flex gap-2">
-                  <Input value={authData?.authUrl || ""} readOnly className="flex-1 font-mono text-xs" />
-                  <Button variant="secondary" icon={copied === "auth_url" ? "check" : "content_copy"} onClick={() => copy(authData?.authUrl, "auth_url")}>
-                    Copy
-                  </Button>
-                </div>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-2">Step 1: Open this URL in your browser</p>
+              <div className="flex gap-2">
+                <Input value={authData?.authUrl || ""} readOnly className="flex-1 font-mono text-xs" />
+                <Button variant="secondary" icon={copied === "auth_url" ? Check : Copy} onClick={() => copy(authData?.authUrl, "auth_url")}>
+                  Copy
+                </Button>
               </div>
+            </div>
 
-              <div>
-                <p className="text-sm font-medium mb-2">Step 2: Paste the callback URL here</p>
-                <p className="text-xs text-text-muted mb-2">
-                  After authorization, copy the full URL from your browser.
-                </p>
-                <Input
-                  value={callbackUrl}
-                  onChange={(e) => setCallbackUrl(e.target.value)}
-                  placeholder={placeholderUrl}
-                  className="font-mono text-xs"
-                />
-              </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Step 2: Paste the callback URL here</p>
+              <p className="text-xs text-text-muted mb-2">
+                After authorization, copy the full URL from your browser.
+              </p>
+              <Input
+                value={callbackUrl}
+                onChange={(e) => setCallbackUrl(e.target.value)}
+                placeholder={placeholderUrl}
+                className="font-mono text-xs"
+              />
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleManualSubmit} fullWidth disabled={!callbackUrl}>
+              <Button onClick={handleManualSubmit} className="w-full" disabled={!callbackUrl}>
                 Connect
               </Button>
-              <Button onClick={handleClose} variant="ghost" fullWidth>
+              <Button onClick={handleClose} variant="ghost" className="w-full">
                 Cancel
               </Button>
             </div>
-          </>
+          </div>
         )}
 
-        {/* Success Step */}
         {step === "success" && (
           <div className="text-center py-6">
             <div className="size-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl text-green-600">check_circle</span>
+              <CheckCircle className="size-8 text-green-600" weight="bold" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Connected Successfully!</h3>
             <p className="text-sm text-text-muted mb-4">
               Your {providerInfo.name} account has been connected.
             </p>
-            <Button onClick={handleClose} fullWidth>
+            <Button onClick={handleClose} className="w-full">
               Done
             </Button>
           </div>
         )}
 
-        {/* Error Step */}
         {step === "error" && (
           <div className="text-center py-6">
             <div className="size-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl text-red-600">error</span>
+              <WarningCircle className="size-8 text-red-600" weight="bold" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Connection Failed</h3>
             <p className="text-sm text-red-600 mb-4">{error}</p>
             <div className="flex gap-2">
-              <Button onClick={startOAuthFlow} variant="secondary" fullWidth>
+              <Button onClick={startOAuthFlow} variant="secondary" className="w-full" icon={ArrowClockwise}>
                 Try Again
               </Button>
-              <Button onClick={handleClose} variant="ghost" fullWidth>
+              <Button onClick={handleClose} variant="ghost" className="w-full">
                 Cancel
               </Button>
             </div>
@@ -515,9 +461,7 @@ OAuthModal.propTypes = {
   providerInfo: PropTypes.shape({ name: PropTypes.string }),
   onSuccess: PropTypes.func,
   onClose: PropTypes.func.isRequired,
-  /** Extra metadata passed to /authorize and /exchange (e.g. gitlab clientId/baseUrl) */
   oauthMeta: PropTypes.object,
-  /** Optional Kiro IDC config for AWS IAM Identity Center device flow */
   idcConfig: PropTypes.shape({
     startUrl: PropTypes.string,
     region: PropTypes.string,

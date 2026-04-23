@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from"react";
-import { Card, Button } from"@/shared/components";
+import { useState } from "react";
+import { 
+  ArrowRight, 
+  PaperPlaneTilt, 
+  CaretDown, 
+  CaretRight, 
+  FolderOpen, 
+  Code, 
+  Copy 
+} from "@phosphor-icons/react";
+import { Card, Button } from "@/shared/components";
 import dynamic from"next/dynamic";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -201,9 +210,9 @@ export default function TranslatorPage() {
 
  // Render action button per step
  const getAction = (stepId) => {
- if (stepId === 1) return <Button size="sm"icon="arrow_forward"loading={loading["toOpenAI"]} onClick={handleToOpenAI}>→ OpenAI</Button>;
- if (stepId === 3) return <Button size="sm"icon="arrow_forward"loading={loading["toTarget"]} onClick={handleToTarget}>→ Target</Button>;
- if (stepId === 4) return <Button size="sm"icon="send"loading={loading["send"]} onClick={handleSend}>Send</Button>;
+ if (stepId === 1) return <Button size="sm" icon={ArrowRight} loading={loading["toOpenAI"]} onClick={handleToOpenAI}>→ OpenAI</Button>;
+ if (stepId === 3) return <Button size="sm" icon={ArrowRight} loading={loading["toTarget"]} onClick={handleToTarget}>→ Target</Button>;
+ if (stepId === 4) return <Button size="sm" icon={PaperPlaneTilt} loading={loading["send"]} onClick={handleSend}>Send</Button>;
  return null;
  };
 
@@ -218,7 +227,7 @@ export default function TranslatorPage() {
  {meta && (
  <div className="flex items-center gap-2 flex-wrap justify-end">
  <MetaBadge label="src"value={meta.sourceFormat} color="blue"/>
- <span className="material-symbols-outlined text-text-muted text-[14px]">arrow_forward</span>
+ <ArrowRight className="size-3.5 text-text-muted" weight="bold" />
  <MetaBadge label="dst"value={meta.targetFormat} color="orange"/>
  <MetaBadge label="provider"value={meta.provider} color="green"/>
  <MetaBadge label="model"value={meta.model} color="purple"/>
@@ -237,9 +246,11 @@ export default function TranslatorPage() {
  {/* Step header */}
  <div className="flex items-center justify-between">
  <button onClick={() => toggle(step.id)} className="flex items-center gap-2 flex-1 text-left group">
- <span className="material-symbols-outlined text-[20px] text-text-muted group-hover:text-primary transition-colors">
- {isExpanded ?"expand_more":"chevron_right"}
- </span>
+ {isExpanded ? (
+   <CaretDown className="size-5 text-text-muted group-hover:text-primary transition-colors" weight="bold" />
+ ) : (
+   <CaretRight className="size-5 text-text-muted group-hover:text-primary transition-colors" weight="bold" />
+ )}
  <span className="text-xs font-mono text-text-muted/60 w-4">{step.id}</span>
  <h3 className="text-sm font-semibold text-text-main">{step.label}</h3>
  <span className="text-xs text-text-muted/60 font-mono">{step.file}</span>
@@ -247,7 +258,7 @@ export default function TranslatorPage() {
  </button>
  {!isExpanded && (
  <div className="flex gap-1 shrink-0">
- <Button size="sm"variant="ghost"icon="folder_open"loading={loading[`load-${step.id}`]} onClick={() => handleLoad(step.id)} />
+ <Button size="sm"variant="ghost" icon={FolderOpen} loading={loading[`load-${step.id}`]} onClick={() => handleLoad(step.id)} />
  {action}
  </div>
  )}
@@ -270,9 +281,9 @@ export default function TranslatorPage() {
  />
  </div>
  <div className="flex gap-2 flex-wrap">
- <Button size="sm"variant="outline"icon="folder_open"loading={loading[`load-${step.id}`]} onClick={() => handleLoad(step.id)}>Load</Button>
- <Button size="sm"variant="outline"icon="data_object"onClick={() => handleFormat(step.id)}>Format</Button>
- <Button size="sm"variant="outline"icon="content_copy"onClick={() => handleCopy(step.id)}>Copy</Button>
+ <Button size="sm"variant="outline" icon={FolderOpen} loading={loading[`load-${step.id}`]} onClick={() => handleLoad(step.id)}>Load</Button>
+ <Button size="sm"variant="outline" icon={Code} onClick={() => handleFormat(step.id)}>Format</Button>
+ <Button size="sm"variant="outline" icon={Copy} onClick={() => handleCopy(step.id)}>Copy</Button>
  {action}
  </div>
  </>
