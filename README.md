@@ -1026,8 +1026,8 @@ Notes:
 
 ### Runtime Files and Storage
 
-- Main app state: `${DATA_DIR}/db.json` (providers, combos, aliases, keys, settings), managed by `src/lib/localDb.js`.
-- Usage history and logs: `~/.8router/usage.json` and `~/.8router/log.txt`, managed by `src/lib/usageDb.js`.
+- Main app state: `${DATA_DIR}/db.json` (providers, combos, aliases, keys, settings), managed by `src/lib/localDb.ts`.
+- Usage history and logs: `~/.8router/usage.json` and `~/.8router/log.txt`, managed by `src/lib/usageDb.ts`.
 - Optional request/translator logs: `<repo>/logs/...` when `ENABLE_REQUEST_LOGS=true`.
 - Usage storage currently follows `~/.8router` path logic and is independent from `DATA_DIR`.
 
