@@ -41,10 +41,10 @@ function ValueCells({ item, viewMode, isSummary = false }: ValueCellsProps) {
   if (viewMode === "tokens") {
     return (
       <>
-        <td className="px-3 py-2 text-right text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-40 tabular-nums">
+        <td className="px-3 py-2 text-right text-xs text-muted-foreground tabular-nums">
           {isSummary && item.promptTokens === undefined ? "—" : fmt(item.promptTokens)}
         </td>
-        <td className="px-3 py-2 text-right text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-40 tabular-nums">
+        <td className="px-3 py-2 text-right text-xs text-muted-foreground tabular-nums">
           {isSummary && item.completionTokens === undefined ? "—" : fmt(item.completionTokens)}
         </td>
         <td className="px-3 py-2 text-right text-xs font-bold tabular-nums text-foreground">
@@ -151,9 +151,9 @@ export default function UsageTable({
  const totalColSpan = columns.length + valueColumns.length;
 
  return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto no-scrollbar">
       <table className="w-full text-sm text-left border-collapse">
-        <thead className="bg-muted/10 text-muted-foreground text-[9px] font-bold uppercase tracking-[0.2em] border-b border-border/50">
+        <thead className="bg-muted/10 text-muted-foreground text-xs font-medium border-b border-border/50">
           <tr>
             {columns.map((col) => (
               <th
@@ -199,7 +199,7 @@ export default function UsageTable({
                       expanded.has(group.groupKey) && "rotate-90 text-primary"
                     )} weight="bold" />
                     <span className={cn(
-                      "text-xs font-bold tracking-tight",
+                      "text-sm font-medium",
                       group.summary.pending > 0 && "text-primary",
                       expanded.has(group.groupKey) && "text-primary"
                     )}>
@@ -224,7 +224,7 @@ export default function UsageTable({
           ))}
           {groupedData.length === 0 && (
             <tr>
-              <td colSpan={totalColSpan} className="px-3 py-12 text-center text-muted-foreground font-bold uppercase tracking-[0.2em] italic opacity-30 text-xs">
+              <td colSpan={totalColSpan} className="px-3 py-12 text-center text-xs text-muted-foreground">
                 {emptyMessage}
               </td>
             </tr>

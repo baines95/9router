@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ChartLineUpIcon as Pulse,
+  LightningIcon,
   LightningIcon as Zap,
   GraphIcon as Network,
   ArrowUpIcon,
@@ -35,13 +36,7 @@ import UsageTable, { fmt } from "./components/UsageTable";
 import { FREE_PROVIDERS } from "@/shared/constants/providers";
 import { usageTimeAgoTicker } from "./components/liveTicker";
 import { defaultStats, mergeLiveStats } from "./components/liveStats";
-
-const PERIODS = [
- { value: "24h", label: "24h" },
- { value: "7d", label: "7d" },
- { value: "30d", label: "30d" },
- { value: "60d", label: "60d" },
-];
+import { USAGE_PERIOD_PRESETS } from "./components/usageChartConfig";
 
 interface ActiveRequest {
   model: string;
@@ -113,10 +108,6 @@ interface FreeProviderConfig {
 }
 
 interface SwitchTabDetail {
-  detail: string;
-}
-
-interface PeriodChangeDetail {
   detail: string;
 }
 
@@ -202,14 +193,16 @@ export default function UsagePageClient() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{translate("Usage")}</h1>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <LightningIcon className="size-4" />
+            {translate("Core Services")}
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{translate("Usage")}</h1>
           <p className="text-sm text-muted-foreground">
             {translate("Monitor infrastructure usage and traffic in real-time.")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <PeriodSelector />
-        </div>
+        <div className="flex items-center gap-2" />
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col gap-6">
@@ -242,31 +235,6 @@ export default function UsagePageClient() {
         </TabsContent>
       </Tabs>
     </SettingsPageShell>
-  );
-}
-
-function PeriodSelector() {
-  const [period, setPeriod] = useState("7d");
-  return (
-    <div className="flex items-center gap-1 bg-muted/30 p-1 border rounded-md">
-      {PERIODS.map(p => (
-        <Button
-          key={p.value}
-          variant={period === p.value ? "secondary" : "ghost"}
-          size="sm"
-          className={cn(
-            "h-7 px-3 text-xs font-medium transition-all", 
-            period === p.value ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-          )}
-          onClick={() => {
-            setPeriod(p.value);
-            window.dispatchEvent(new CustomEvent("usage-period-change", { detail: p.value }));
-          }}
-        >
-          {p.label}
-        </Button>
-      ))}
-    </div>
   );
 }
 
@@ -354,15 +322,6 @@ function UsageDashboard() {
   const sortOrder = (searchParams.get("sortOrder") as "asc" | "desc") || "asc";
 
   useEffect(() => {
-    const handlePeriodChange = (event: Event) => {
-      const customEvent = event as CustomEvent<PeriodChangeDetail["detail"]>;
-      setPeriod(customEvent.detail);
-    };
-    window.addEventListener("usage-period-change", handlePeriodChange);
-    return () => window.removeEventListener("usage-period-change", handlePeriodChange);
-  }, []);
-
-  useEffect(() => {
     setLoading(true);
     fetch(`/api/usage/stats?period=${period}`)
       .then((r) => r.ok ? r.json() : null)
@@ -414,32 +373,50 @@ function UsageDashboard() {
 
       {/* 2. Main Chart & Recent Activity */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="lg:col-span-2 flex flex-col">
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">{translate("Performance")}</CardTitle>
-            <CardDescription>{translate("Traffic and cost metrics over time.")}</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">{translate("Traffic and cost metrics over time.")}</CardDescription>
             <CardAction>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant={viewMode === "cost" ? "secondary" : "ghost"} 
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setViewMode("cost")}
-                >
-                  {translate("Costs")}
-                </Button>
-                <Button 
-                  variant={viewMode === "tokens" ? "secondary" : "ghost"} 
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setViewMode("tokens")}
-                >
-                  {translate("Tokens")}
-                </Button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-muted/30 p-1 border rounded-md">
+                  {USAGE_PERIOD_PRESETS.map((p) => (
+                    <Button
+                      key={p.value}
+                      variant={period === p.value ? "secondary" : "ghost"}
+                      size="sm"
+                      className={cn(
+                        "h-7 px-3 text-xs font-medium transition-all",
+                        period === p.value ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                      )}
+                      onClick={() => setPeriod(p.value)}
+                    >
+                      {p.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant={viewMode === "cost" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setViewMode("cost")}
+                  >
+                    {translate("Costs")}
+                  </Button>
+                  <Button
+                    variant={viewMode === "tokens" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setViewMode("tokens")}
+                  >
+                    {translate("Tokens")}
+                  </Button>
+                </div>
               </div>
             </CardAction>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 p-4">
             <UsageChart period={period} viewMode={viewMode} />
           </CardContent>
         </Card>
@@ -447,7 +424,7 @@ function UsageDashboard() {
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="text-sm font-medium">{translate("Recent Activity")}</CardTitle>
-            <CardDescription>{translate("Latest API requests.")}</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">{translate("Latest API requests.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 p-0 px-4 pb-4">
             <RecentPulseList requests={stats?.recentRequests || []} />
@@ -467,7 +444,7 @@ function UsageDashboard() {
             <div className="flex items-center justify-between px-6">
               <div className="flex flex-col gap-1 py-4">
                 <CardTitle className="text-sm font-medium">{translate("Usage Details")}</CardTitle>
-                <CardDescription>{translate("Breakdown by dimensions.")}</CardDescription>
+                <CardDescription className="text-xs text-muted-foreground">{translate("Breakdown by dimensions.")}</CardDescription>
               </div>
               <TabsList className="bg-transparent h-auto p-0 gap-6">
                 {[
@@ -507,7 +484,7 @@ function KPIItem({ label, value, icon: Icon }: { label: string, value: string | 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-sm font-medium">
           {translate(label)}
         </CardTitle>
         <CardAction>
@@ -544,7 +521,7 @@ function RecentPulseList({ requests = [] }: { requests: RecentRequest[] }) {
               )} />
               <div className="flex flex-col gap-1 w-full min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium truncate">{r.model}</span>
+                  <span className="text-xs font-medium truncate text-foreground/90">{r.model}</span>
                   <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                     <TimeAgo timestamp={r.timestamp} />
                   </span>
@@ -672,9 +649,9 @@ function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, 
       emptyMessage={translate("No data records found for this scope.")}
       renderSummaryCells={(group) => (
         <>
-          <td className="px-4 py-3 text-muted-foreground text-xs font-medium">—</td>
-          <td className="px-4 py-3 text-right font-medium tabular-nums text-sm text-foreground">{fmt(group.summary.requests)}</td>
-          <td className="px-4 py-3 text-right text-muted-foreground tabular-nums text-xs font-medium">
+          <td className="px-4 py-3 text-xs text-muted-foreground">—</td>
+          <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">{fmt(group.summary.requests)}</td>
+          <td className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums">
             {group.summary.lastUsed ? timeAgo(group.summary.lastUsed) : translate("Never")}
           </td>
         </>
@@ -683,7 +660,7 @@ function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, 
         <>
           <td className="px-4 py-3">
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{item[tableView === "apiKey" ? "keyName" : tableView === "account" ? "accountName" : tableView === "endpoint" ? "endpoint" : "rawModel"] || "Unknown"}</span>
+              <span className="text-sm font-medium">{item[tableView === "apiKey" ? "keyName" : tableView === "account" ? "accountName" : tableView === "endpoint" ? "endpoint" : "rawModel"] || "Unknown"}</span>
               {tableView !== "model" && <span className="text-xs text-muted-foreground">{item.rawModel}</span>}
             </div>
           </td>
@@ -692,8 +669,8 @@ function UsageTableContainer({ stats, tableView, sortBy, sortOrder, toggleSort, 
               {item.provider}
             </Badge>
           </td>
-          <td className="px-4 py-3 text-right font-medium tabular-nums text-sm text-foreground">{fmt(item.requests)}</td>
-          <td className="px-4 py-3 text-right text-muted-foreground tabular-nums text-xs">
+          <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">{fmt(item.requests)}</td>
+          <td className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums">
             {item.lastUsed ? timeAgo(item.lastUsed) : "—"}
           </td>
         </>
