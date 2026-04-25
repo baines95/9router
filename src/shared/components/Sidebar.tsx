@@ -149,7 +149,7 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton isActive={isActive(item.url)} tooltip={translate(item.title)} render={
-                      <Link href={item.url} className="text-sm font-medium">
+                      <Link href={item.url} className="text-xs font-medium">
                         <item.icon data-icon="inline-start" weight={isActive(item.url) ? "fill" : "bold"} className={cn("size-4", isActive(item.url) ? "text-primary" : "text-muted-foreground")} />
                         <span>{translate(item.title)}</span>
                       </Link>
@@ -167,7 +167,7 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
               <Collapsible defaultOpen={pathname.includes("media-providers")} className="group/collapsible" render={
                 <SidebarMenuItem>
                   <CollapsibleTrigger render={
-                    <SidebarMenuButton tooltip={translate("Media Providers")} className="text-sm font-medium">
+                    <SidebarMenuButton tooltip={translate("Media Providers")} className="text-xs font-medium">
                       <Headphones data-icon="inline-start" weight="bold" />
                       <span>{translate("Media Providers")}</span>
                       <CaretRight data-icon="inline-end" className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" weight="bold" />

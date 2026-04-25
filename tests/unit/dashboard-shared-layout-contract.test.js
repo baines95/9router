@@ -15,6 +15,7 @@ describe("dashboard shared layout contract", () => {
   it("keeps sidebar labels in canonical muted density", () => {
     const sidebar = read("src/shared/components/Sidebar.tsx");
     expect(sidebar).toContain("text-xs text-muted-foreground");
+    expect(sidebar).toContain("className=\"text-xs font-medium\"");
   });
 
   it("keeps menu actions compact", () => {
