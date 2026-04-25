@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { useTheme } from "@/shared/hooks/useTheme";
+import { translate } from "@/i18n/runtime";
+import { toast } from "sonner";
 import { SettingsPageShell } from "../_settings/components";
 import {
   AppInfoSection,
@@ -12,7 +15,6 @@ import {
   SecuritySection,
   type Settings,
 } from "./sections";
-
 interface ProfilePageClientProps {
   initialData: {
     settings: Settings;
@@ -35,17 +37,14 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
     },
   );
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
-  const [passStatus, setPassStatus] = useState({ type: "", message: "" });
   const [passLoading, setPassLoading] = useState(false);
   const [dbLoading, setDbLoading] = useState(false);
-  const [dbStatus, setDbStatus] = useState({ type: "", message: "" });
   const importFileRef = useRef<HTMLInputElement>(null);
   const [proxyForm, setProxyForm] = useState({
     outboundProxyEnabled: initialData?.settings?.outboundProxyEnabled === true,
     outboundProxyUrl: initialData?.settings?.outboundProxyUrl || "",
     outboundNoProxy: initialData?.settings?.outboundNoProxy || "",
   });
-  const [proxyStatus, setProxyStatus] = useState({ type: "", message: "" });
   const [proxyLoading, setProxyLoading] = useState(false);
   const [proxyTestLoading, setProxyTestLoading] = useState(false);
 
@@ -53,7 +52,6 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
     e.preventDefault();
     if (settings.outboundProxyEnabled !== true) return;
     setProxyLoading(true);
-    setProxyStatus({ type: "", message: "" });
 
     try {
       const res = await fetch("/api/settings", {
@@ -68,12 +66,12 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
       const data = await res.json();
       if (res.ok) {
         setSettings((prev) => ({ ...prev, ...data }));
-        setProxyStatus({ type: "success", message: "Proxy settings applied" });
+        toast.success(translate("Proxy settings applied"));
       } else {
-        setProxyStatus({ type: "error", message: data.error || "Failed to update proxy settings" });
+        toast.error(data.error || translate("Failed to update proxy settings"));
       }
     } catch {
-      setProxyStatus({ type: "error", message: "An error occurred" });
+      toast.error(translate("An error occurred"));
     } finally {
       setProxyLoading(false);
     }
@@ -84,12 +82,11 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
     const proxyUrl = (proxyForm.outboundProxyUrl || "").trim();
     if (!proxyUrl) {
-      setProxyStatus({ type: "error", message: "Please enter a Proxy URL to test" });
+      toast.error(translate("Please enter a Proxy URL to test"));
       return;
     }
 
     setProxyTestLoading(true);
-    setProxyStatus({ type: "", message: "" });
 
     try {
       const res = await fetch("/api/settings/proxy-test", {
@@ -100,18 +97,12 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
       const data = await res.json();
       if (res.ok && data?.ok) {
-        setProxyStatus({
-          type: "success",
-          message: `Proxy test OK (${data.status}) in ${data.elapsedMs}ms`,
-        });
+        toast.success(`${translate("Proxy test OK")} (${data.status}) ${translate("in")} ${data.elapsedMs}ms`);
       } else {
-        setProxyStatus({
-          type: "error",
-          message: data?.error || "Proxy test failed",
-        });
+        toast.error(data?.error || translate("Proxy test failed"));
       }
     } catch {
-      setProxyStatus({ type: "error", message: "An error occurred" });
+      toast.error(translate("An error occurred"));
     } finally {
       setProxyTestLoading(false);
     }
@@ -119,7 +110,6 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
   const updateOutboundProxyEnabled = async (outboundProxyEnabled: boolean) => {
     setProxyLoading(true);
-    setProxyStatus({ type: "", message: "" });
 
     try {
       const res = await fetch("/api/settings", {
@@ -132,15 +122,12 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
       if (res.ok) {
         setSettings((prev) => ({ ...prev, ...data }));
         setProxyForm((prev) => ({ ...prev, outboundProxyEnabled: data?.outboundProxyEnabled === true }));
-        setProxyStatus({
-          type: "success",
-          message: outboundProxyEnabled ? "Proxy enabled" : "Proxy disabled",
-        });
+        toast.success(outboundProxyEnabled ? translate("Proxy enabled") : translate("Proxy disabled"));
       } else {
-        setProxyStatus({ type: "error", message: data.error || "Failed to update proxy settings" });
+        toast.error(data.error || translate("Failed to update proxy settings"));
       }
     } catch {
-      setProxyStatus({ type: "error", message: "An error occurred" });
+      toast.error(translate("An error occurred"));
     } finally {
       setProxyLoading(false);
     }
@@ -149,12 +136,11 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      setPassStatus({ type: "error", message: "Passwords do not match" });
+      toast.error(translate("Passwords do not match"));
       return;
     }
 
     setPassLoading(true);
-    setPassStatus({ type: "", message: "" });
 
     try {
       const res = await fetch("/api/settings", {
@@ -169,13 +155,13 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
       const data = await res.json();
 
       if (res.ok) {
-        setPassStatus({ type: "success", message: "Password updated successfully" });
+        toast.success(translate("Password updated successfully"));
         setPasswords({ current: "", new: "", confirm: "" });
       } else {
-        setPassStatus({ type: "error", message: data.error || "Failed to update password" });
+        toast.error(data.error || translate("Failed to update password"));
       }
     } catch {
-      setPassStatus({ type: "error", message: "An error occurred" });
+      toast.error(translate("An error occurred"));
     } finally {
       setPassLoading(false);
     }
@@ -272,7 +258,6 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
   const handleExportDatabase = async () => {
     setDbLoading(true);
-    setDbStatus({ type: "", message: "" });
     try {
       const res = await fetch("/api/settings/database");
       if (!res.ok) {
@@ -293,9 +278,9 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
 
-      setDbStatus({ type: "success", message: "Database backup downloaded" });
+      toast.success(translate("Database backup downloaded"));
     } catch (err: any) {
-      setDbStatus({ type: "error", message: err.message || "Failed to export database" });
+      toast.error(err.message || translate("Failed to export database"));
     } finally {
       setDbLoading(false);
     }
@@ -306,7 +291,6 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
     if (!file) return;
 
     setDbLoading(true);
-    setDbStatus({ type: "", message: "" });
 
     try {
       const raw = await file.text();
@@ -320,13 +304,13 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || "Failed to import database");
+        throw new Error(data.error || translate("Failed to import database"));
       }
 
       await reloadSettings();
-      setDbStatus({ type: "success", message: "Database imported successfully" });
+      toast.success(translate("Database imported successfully"));
     } catch (err: any) {
-      setDbStatus({ type: "error", message: err.message || "Invalid backup file" });
+      toast.error(err.message || translate("Invalid backup file"));
     } finally {
       if (importFileRef.current) {
         importFileRef.current.value = "";
@@ -339,49 +323,59 @@ export default function ProfilePageClient({ initialData }: ProfilePageClientProp
 
   return (
     <SettingsPageShell>
-      <LocalModeSection
-        machineId={initialData?.machineId}
-        theme={theme}
-        setTheme={(value) => setTheme(value as any)}
-        dbLoading={dbLoading}
-        dbStatus={dbStatus}
-        importFileRef={importFileRef}
-        onExport={handleExportDatabase}
-        onImport={handleImportDatabase}
-      />
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <SlidersHorizontalIcon className="size-4" weight="bold" />
+            {translate("Core Services")}
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{translate("System Profile")}</h1>
+          <p className="text-sm text-muted-foreground">{translate("Configure runtime, security, routing, and network.")}</p>
+        </div>
 
-      <SecuritySection
-        settings={settings}
-        passwords={passwords}
-        setPasswords={setPasswords}
-        passStatus={passStatus}
-        passLoading={passLoading}
-        onRequireLoginChange={() => updateRequireLogin(!settings.requireLogin)}
-        onSubmit={handlePasswordChange}
-      />
+        <div className="space-y-6">
+          <LocalModeSection
+            machineId={initialData?.machineId}
+            theme={theme}
+            setTheme={(value) => setTheme(value as any)}
+            dbLoading={dbLoading}
+            importFileRef={importFileRef}
+            onExport={handleExportDatabase}
+            onImport={handleImportDatabase}
+          />
 
-      <RoutingSection
-        settings={settings}
-        onFallbackToggle={() => updateFallbackStrategy(settings.fallbackStrategy === "round-robin" ? "fill-first" : "round-robin")}
-        onStickyChange={updateStickyLimit}
-        onComboToggle={() => updateComboStrategy(settings.comboStrategy === "round-robin" ? "fallback" : "round-robin")}
-      />
+          <SecuritySection
+            settings={settings}
+            passwords={passwords}
+            setPasswords={setPasswords}
+            passLoading={passLoading}
+            onRequireLoginChange={() => updateRequireLogin(!settings.requireLogin)}
+            onSubmit={handlePasswordChange}
+          />
 
-      <NetworkSection
-        settings={settings}
-        proxyForm={proxyForm}
-        setProxyForm={setProxyForm}
-        proxyStatus={proxyStatus}
-        proxyLoading={proxyLoading}
-        proxyTestLoading={proxyTestLoading}
-        onToggleProxy={() => updateOutboundProxyEnabled(!(settings.outboundProxyEnabled === true))}
-        onSubmitProxy={updateOutboundProxy}
-        onTestProxy={testOutboundProxy}
-      />
+          <RoutingSection
+            settings={settings}
+            onFallbackToggle={() => updateFallbackStrategy(settings.fallbackStrategy === "round-robin" ? "fill-first" : "round-robin")}
+            onStickyChange={updateStickyLimit}
+            onComboToggle={() => updateComboStrategy(settings.comboStrategy === "round-robin" ? "fallback" : "round-robin")}
+          />
 
-      <ObservabilitySection enabled={observabilityEnabled} onChange={updateObservabilityEnabled} />
+          <NetworkSection
+            settings={settings}
+            proxyForm={proxyForm}
+            setProxyForm={setProxyForm}
+            proxyLoading={proxyLoading}
+            proxyTestLoading={proxyTestLoading}
+            onToggleProxy={() => updateOutboundProxyEnabled(!(settings.outboundProxyEnabled === true))}
+            onSubmitProxy={updateOutboundProxy}
+            onTestProxy={testOutboundProxy}
+          />
 
-      <AppInfoSection />
+          <ObservabilitySection enabled={observabilityEnabled} onChange={updateObservabilityEnabled} />
+
+          <AppInfoSection />
+        </div>
+      </div>
     </SettingsPageShell>
   );
 }

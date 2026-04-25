@@ -1,5 +1,6 @@
 import { PulseIcon } from "@phosphor-icons/react";
-import { Card, Toggle } from "@/shared/components";
+import { translate } from "@/i18n/runtime";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Toggle } from "@/shared/components";
 
 interface Props {
   enabled: boolean;
@@ -9,17 +10,22 @@ interface Props {
 export function ObservabilitySection({ enabled, onChange }: Props) {
   return (
     <Card>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-lg bg-muted/30 text-muted-foreground"><PulseIcon className="size-5" weight="bold" /></div>
-        <h3 className="text-lg font-semibold">Observability</h3>
-      </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-medium">Enable Observability</p>
-          <p className="text-sm text-muted-foreground">Record request details for inspection in the logs view</p>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <PulseIcon className="size-4" weight="bold" />
+          {translate("Observability")}
+        </CardTitle>
+        <CardDescription className="text-xs text-muted-foreground">{translate("Control request logging visibility in the dashboard logs view.")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">{translate("Enable Observability")}</p>
+            <p className="text-xs text-muted-foreground">{translate("Record request details for inspection in logs.")}</p>
+          </div>
+          <Toggle checked={enabled} onCheckedChange={onChange} className="scale-90" />
         </div>
-        <Toggle checked={enabled} onCheckedChange={onChange} />
-      </div>
+      </CardContent>
     </Card>
   );
 }

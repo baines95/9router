@@ -1,72 +1,77 @@
 import { DesktopIcon, SunIcon, MoonIcon, CircleHalfIcon, DownloadIcon, UploadIcon } from "@phosphor-icons/react";
-import { Button, Card } from "@/shared/components";
+import { CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Button, Card, CardHeader, CardTitle, Input } from "@/shared/components";
+import { translate } from "@/i18n/runtime";
 import { cn } from "@/lib/utils";
-import type { Status } from "./types";
 
 interface Props {
   machineId: string;
   theme: string;
   setTheme: (value: string) => void;
   dbLoading: boolean;
-  dbStatus: Status;
   importFileRef: React.RefObject<HTMLInputElement | null>;
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function LocalModeSection({ machineId, theme, setTheme, dbLoading, dbStatus, importFileRef, onExport, onImport }: Props) {
+export function LocalModeSection({ machineId, theme, setTheme, dbLoading, importFileRef, onExport, onImport }: Props) {
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="size-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <DesktopIcon className="size-6" weight="bold" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold">Local Mode</h2>
-            <p className="text-muted-foreground">Running on your machine</p>
-            <p className="text-xs font-mono opacity-50">ID: {machineId}</p>
-          </div>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <DesktopIcon className="size-4" weight="bold" />
+          {translate("Local")}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="machine-id">{translate("Machine ID")}</Label>
+          <Input id="machine-id" value={machineId} readOnly className="h-9 font-mono text-xs tabular-nums" />
         </div>
-        <div className="inline-flex p-1 rounded-lg bg-black/5 dark:bg-white/5">
-          {["light", "dark", "system"].map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setTheme(option)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all",
-                theme === option ? "bg-white dark:bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {option === "light" && <SunIcon className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
-              {option === "dark" && <MoonIcon className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
-              {option === "system" && <CircleHalfIcon className="size-4.5" weight={theme === option ? "fill" : "bold"} />}
-              <span className="capitalize text-sm">{option}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 pt-4 border-t border-border/50">
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/5 border border-border/50">
-          <div>
-            <p className="font-medium">Database Location</p>
-            <p className="text-sm text-muted-foreground font-mono">~/.8router/db.json</p>
+
+        <div className="space-y-2">
+          <Label>{translate("Theme")}</Label>
+          <div className="inline-flex w-full flex-wrap gap-2 rounded-md border p-2 sm:w-auto">
+            {["light", "dark", "system"].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setTheme(option)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  theme === option ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {option === "light" && <SunIcon className="size-4" weight={theme === option ? "fill" : "bold"} />}
+                {option === "dark" && <MoonIcon className="size-4" weight={theme === option ? "fill" : "bold"} />}
+                {option === "system" && <CircleHalfIcon className="size-4" weight={theme === option ? "fill" : "bold"} />}
+                <span className="capitalize">{translate(option)}</span>
+              </button>
+            ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={onExport} disabled={dbLoading}>
-            <DownloadIcon className="size-4 mr-2" weight="bold" />
-            Download Backup
+
+        <div className="space-y-2">
+          <Label>{translate("Database Location")}</Label>
+          <Input value="~/.8router/db.json" readOnly className="h-9 font-mono text-xs tabular-nums" />
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="secondary" onClick={onExport} disabled={dbLoading} className="h-8 text-xs w-full sm:w-auto">
+            <DownloadIcon className="mr-2 size-4" weight="bold" />
+            {translate("Download Backup")}
           </Button>
-          <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={dbLoading}>
-            <UploadIcon className="size-4 mr-2" weight="bold" />
-            Import Backup
+          <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={dbLoading} className="h-8 text-xs w-full sm:w-auto">
+            <UploadIcon className="mr-2 size-4" weight="bold" />
+            {translate("Import Backup")}
           </Button>
           <input ref={importFileRef} type="file" accept="application/json,.json" className="hidden" onChange={onImport} />
         </div>
-        {dbStatus.message && <p className={cn("text-sm", dbStatus.type === "error" ? "text-destructive" : "text-primary dark:text-primary")}>{dbStatus.message}</p>}
-      </div>
+
+        <p className="text-xs text-muted-foreground">{translate("Running on your machine with local storage.")}</p>
+      </CardContent>
     </Card>
   );
 }
