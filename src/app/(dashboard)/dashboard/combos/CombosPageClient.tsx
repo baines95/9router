@@ -149,27 +149,27 @@ export default function CombosPageClient({ initialData }: CombosPageClientProps)
  {/* Header */}
  <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/50">
  <div className="space-y-1">
- <div className="flex items-center gap-2 text-muted-foreground font-medium text-xs uppercase tracking-tight">
+ <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <Stack className="size-4" weight="bold" />
  Infrastructure
  </div>
- <h1 className="text-3xl font-medium tracking-tight text-foreground uppercase">Intelligence Combos</h1>
- <p className="text-sm text-muted-foreground font-medium italic opacity-70">
+ <h1 className="text-2xl font-semibold tracking-tight text-foreground">Intelligence Combos</h1>
+ <p className="text-sm text-muted-foreground">
  Define virtual model groups with autonomous fallback strategies.
  </p>
  </div>
 
- <Button size="sm" className="font-bold text-[10px] uppercase tracking-widest h-8 px-5 rounded-none shadow-none" onClick={() => setShowCreateModal(true)}>
- <Plus className="size-3.5 mr-1.5" weight="bold" /> New Combo
+ <Button size="sm" className="h-8 rounded-md px-4 text-xs font-medium shadow-none" onClick={() => setShowCreateModal(true)}>
+ <Plus className="mr-1.5 size-3.5" weight="bold" /> New Combo
  </Button>
  </header>
 
  {/* Combos List */}
  <div className="grid gap-3">
  {combos.length === 0 ? (
- <Card className="border-border/50 border-dashed bg-muted/5 py-20 text-center flex flex-col items-center justify-center opacity-10 grayscale rounded-none">
- <Stack className="size-16 mb-4" weight="bold" />
- <p className="text-xs font-bold uppercase tracking-[0.3em]">No combos provisioned</p>
+ <Card className="flex flex-col items-center justify-center rounded-md border-dashed border-border/50 bg-muted/5 py-20 text-center">
+ <Stack className="mb-4 size-16 text-muted-foreground" weight="bold" />
+ <p className="text-sm font-medium text-foreground">No combos provisioned</p>
  </Card>
  ) : (
  combos.map((combo) => (
@@ -219,16 +219,16 @@ function ComboCard({ combo, copied, onCopy, onEdit, onDelete, roundRobinEnabled,
   onToggleRoundRobin: (enabled: boolean) => void;
 }) {
  return (
- <Card className="border-border/50 overflow-hidden p-0 rounded-none shadow-none bg-background/50 group">
+ <Card className="group overflow-hidden rounded-md border-border/50 bg-background/50 p-0 shadow-none">
  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4">
  <div className="flex items-center gap-4 min-w-0 flex-1">
- <div className="size-10 rounded-none bg-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+ <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/5">
  <Stack className="size-5 text-primary" weight="bold" />
  </div>
  <div className="min-w-0 flex-1 space-y-1">
  <div className="flex items-center gap-2.5">
- <code className="text-sm font-bold font-mono tracking-tight text-foreground truncate uppercase">{combo.name}</code>
- <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-bold uppercase border-border/50 text-muted-foreground/60 rounded-none tabular-nums">{combo.models.length} PIPELINE SLOTS</Badge>
+ <code className="truncate font-mono text-xs font-medium tabular-nums text-foreground">{combo.name}</code>
+ <Badge variant="outline" className="h-4 rounded-md border-border/50 px-1.5 text-[10px] tabular-nums text-muted-foreground">{combo.models.length} slots</Badge>
  </div>
  <div className="flex items-center gap-1.5 flex-wrap">
  {combo.models.slice(0, 5).map((model, index) => (
@@ -237,7 +237,7 @@ function ComboCard({ combo, copied, onCopy, onEdit, onDelete, roundRobinEnabled,
  </code>
  ))}
  {combo.models.length > 5 && (
- <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">+{combo.models.length - 5} more</span>
+ <span className="text-[10px] text-muted-foreground">+{combo.models.length - 5} more</span>
  )}
  </div>
  </div>
@@ -245,11 +245,11 @@ function ComboCard({ combo, copied, onCopy, onEdit, onDelete, roundRobinEnabled,
 
  <div className="flex items-center justify-between md:justify-end gap-8 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-border/20">
  <div className="flex items-center gap-2.5">
- <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40">Load Balance</span>
+ <span className="text-[10px] text-muted-foreground">Load Balance</span>
  <Switch checked={roundRobinEnabled} onCheckedChange={onToggleRoundRobin} className="scale-75 data-[state=checked]:bg-primary" />
  </div>
 
- <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+ <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
  <Button variant="ghost" size="icon" className="size-8 rounded-none hover:bg-primary/10 text-muted-foreground hover:text-primary" onClick={() => onCopy(combo.name, `combo-${combo.id}`)}>
  {copied === `combo-${combo.id}` ? <Check className="size-3.5 text-primary" weight="bold" /> : <Copy className="size-3.5" weight="bold" />}
  </Button>
@@ -288,7 +288,7 @@ function ModelItemRow({ index, model, isFirst, isLast, onEdit, onMoveUp, onMoveD
 
  return (
  <div className="flex items-center gap-2.5 p-2 rounded-none border border-border/40 bg-muted/5 group/item transition-colors hover:bg-muted/10">
- <span className="text-[10px] font-black text-muted-foreground/30 w-4 text-center shrink-0 tabular-nums">{index + 1}</span>
+ <span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground/40 tabular-nums">{index + 1}</span>
  {editing ? (
  <Input 
  autoFocus 
@@ -356,20 +356,20 @@ function ComboFormModal({ isOpen, combo, onClose, onSave, activeProviders }: Com
  <Dialog open={isOpen} onOpenChange={o => !o && onClose()}>
  <DialogContent className="sm:max-w-md rounded-none border-border/50 shadow-none p-6">
  <DialogHeader className="mb-4">
- <DialogTitle className="text-lg font-bold tracking-tight uppercase">{combo ? "Configure Combo" : "Provision Combo"}</DialogTitle>
- <DialogDescription className="text-xs font-medium italic opacity-60">Define logic-gate for high-availability routing.</DialogDescription>
+ <DialogTitle className="text-sm font-medium">{combo ? "Configure Combo" : "Provision Combo"}</DialogTitle>
+ <DialogDescription className="text-xs text-muted-foreground">Define logic-gate for high-availability routing.</DialogDescription>
  </DialogHeader>
  <div className="space-y-5 py-2">
  <div className="grid gap-2">
- <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60 px-1">Namespace Identifier</Label>
- <Input value={name} onChange={e => { setName(e.target.value); setNameError(""); }} placeholder="GPT-4-CLAUDE-STABLE" className="h-10 rounded-none border-border/50 bg-muted/5 font-mono uppercase"/>
- {nameError && <p className="text-[10px] text-destructive font-black uppercase px-1">{nameError}</p>}
+ <Label className="px-1 text-xs text-muted-foreground">Namespace Identifier</Label>
+ <Input value={name} onChange={e => { setName(e.target.value); setNameError(""); }} placeholder="gpt-4-claude-stable" className="h-10 rounded-md border-border/50 bg-muted/5 font-mono text-xs"/>
+ {nameError && <p className="px-1 text-[10px] text-destructive">{nameError}</p>}
  </div>
 
  <div className="space-y-2">
  <div className="flex items-center justify-between px-1">
- <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Execution Pipeline</Label>
- <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-bold uppercase border-border/50 text-muted-foreground/40 rounded-none tabular-nums">{models.length} NODES</Badge>
+ <Label className="text-xs text-muted-foreground">Execution Pipeline</Label>
+ <Badge variant="outline" className="h-4 rounded-md border-border/50 px-1.5 text-[10px] tabular-nums text-muted-foreground">{models.length} nodes</Badge>
  </div>
  
  <ScrollArea className="max-h-[300px] border border-border/40 bg-muted/5 p-1">
@@ -388,21 +388,21 @@ function ComboFormModal({ isOpen, combo, onClose, onSave, activeProviders }: Com
  />
  ))}
  {models.length === 0 && (
- <div className="py-10 text-center border-2 border-dashed border-border/20 rounded-none opacity-20">
- <p className="text-[10px] font-bold uppercase tracking-widest">Pipeline Empty</p>
+ <div className="rounded-md border-2 border-dashed border-border/20 py-10 text-center">
+ <p className="text-xs text-muted-foreground">Pipeline empty</p>
  </div>
  )}
  </div>
  </ScrollArea>
  
- <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-bold uppercase tracking-widest rounded-none border-border/50 bg-background hover:bg-muted/30" onClick={() => setShowModelSelect(true)}>
- <Plus className="size-3.5 mr-1.5" weight="bold" /> Add Intelligence Node
+ <Button variant="outline" size="sm" className="h-9 w-full rounded-md border-border/50 bg-background text-xs font-medium hover:bg-muted/30" onClick={() => setShowModelSelect(true)}>
+ <Plus className="mr-1.5 size-3.5" weight="bold" /> Add Intelligence Node
  </Button>
  </div>
  </div>
- <DialogFooter className="gap-2 sm:gap-2 mt-4 p-0">
- <Button variant="outline" className="font-bold text-[10px] uppercase tracking-widest flex-1 h-10 rounded-none border-border/50" onClick={onClose}>Cancel</Button>
- <Button className="font-bold text-[10px] uppercase tracking-widest flex-1 h-10 rounded-none shadow-none" onClick={handleSave} disabled={saving || !name.trim()}>{saving ? "Committing..." : "Commit Combo"}</Button>
+ <DialogFooter className="mt-4 gap-2 p-0 sm:gap-2">
+ <Button variant="outline" className="h-10 flex-1 rounded-md border-border/50 text-xs font-medium" onClick={onClose}>Cancel</Button>
+ <Button className="h-10 flex-1 rounded-md text-xs font-medium shadow-none" onClick={handleSave} disabled={saving || !name.trim()}>{saving ? "Committing..." : "Commit Combo"}</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>

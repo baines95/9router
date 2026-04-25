@@ -306,12 +306,12 @@ export default function ProvidersPage() {
  {/* Page Header */}
  <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-border/50">
  <div className="space-y-0.5">
- <div className="flex items-center gap-1.5 text-muted-foreground font-medium text-xs uppercase tracking-wider">
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
  <ServerIcon className="size-3.5" weight="bold"/>
  Dịch vụ chính
  </div>
  <h1 className="text-2xl font-semibold tracking-tight">Providers</h1>
- <p className="text-sm text-muted-foreground font-medium">
+ <p className="text-sm text-muted-foreground">
  {translate("Manage your model providers, API credentials, and connectivity status across the network.")}
  </p>
  </div>
@@ -320,7 +320,7 @@ export default function ProvidersPage() {
  <Button
  variant="outline"
  size="sm"
- className="h-8 text-xs font-bold uppercase tracking-wider px-3"
+ className="h-8 px-3 text-xs font-medium"
  onClick={() => handleBatchTest("all")}
  disabled={!!testingMode}
  >
@@ -342,7 +342,7 @@ export default function ProvidersPage() {
  key={cat.id}
  onClick={() => setActiveCategory(cat.id)}
  className={cn(
- "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all shrink-0",
+ "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all shrink-0",
  activeCategory === cat.id
  ? "bg-background text-foreground shadow-sm border border-border/50"
  : "text-muted-foreground hover:text-foreground"
@@ -420,7 +420,7 @@ export default function ProvidersPage() {
  </h3>
  </div>
  <div className="flex items-center justify-between pl-10.5 mt-0.5">
- <div className="text-[10px] text-muted-foreground/40 font-semibold uppercase tracking-wider">
+ <div className="text-[10px] text-muted-foreground">
  {translate("OpenAI Compatible")}
  </div>
  </div>
@@ -520,7 +520,7 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }: {
  e.target.nextSibling.style.display = 'flex';
  }}
  />
- <div className="hidden size-full items-center justify-center text-[10px] font-bold uppercase tracking-tight" style={{ color: provider.color }}>
+ <div className="hidden size-full items-center justify-center text-[10px] font-medium" style={{ color: provider.color }}>
  {provider.textIcon || provider.id.slice(0, 2).toUpperCase()}
  </div>
  </div>
@@ -528,7 +528,7 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }: {
  <CardTitle className="text-sm font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
  {provider.name}
  </CardTitle>
- <CardDescription className="text-[10px] text-muted-foreground/60 font-medium tracking-wide uppercase">
+ <CardDescription className="text-[10px] text-muted-foreground">
  {provider.authType}
  </CardDescription>
  </div>
@@ -572,7 +572,7 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }: {
  )}
  <Link 
  href={`/dashboard/providers/${provider.id}`} 
- className="text-[10px] font-semibold text-muted-foreground/40 hover:text-primary transition-colors tracking-wider px-1.5 py-0.5 inline-flex items-center gap-0.5"
+ className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-primary"
  >
  {translate("Setup")}
  <ArrowRight className="size-2.5" weight="bold" />
@@ -584,7 +584,7 @@ function NewProviderCard({ provider, stats, testingMode, onToggle, onTest }: {
  {!allDisabled && error > 0 && (
  <div className="flex items-center gap-1.5 pt-0.5">
  <div className="size-1.5 rounded-full bg-destructive animate-pulse"/>
- <span className="text-[10px] font-semibold text-destructive tracking-wider truncate">{errorCode || error} error</span>
+ <span className="truncate text-[10px] text-destructive">{errorCode || error} error</span>
  </div>
  )}
  </CardContent>
@@ -599,7 +599,7 @@ function StatCard({ label, value, icon: Icon, color }: { label: string, value: n
  <Icon className={cn("size-4", color)} weight="bold" />
  </div>
  <div className="flex flex-col">
- <span className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase leading-none mb-1">{translate(label)}</span>
+ <span className="mb-1 text-[10px] leading-none text-muted-foreground">{translate(label)}</span>
  <span className="text-base font-semibold tabular-nums leading-none tracking-tight">{value}</span>
  </div>
  </Card>
@@ -693,15 +693,15 @@ function AddOpenAICompatibleModal({ isOpen, onClose, onCreated }: { isOpen: bool
  <DialogHeader><DialogTitle className="text-lg font-medium tracking-tight">Add OpenAI Compatible</DialogTitle></DialogHeader>
  <div className="space-y-4 pt-4">
  <div className="grid gap-2">
- <Label htmlFor="oai-name" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</Label>
+ <Label htmlFor="oai-name" className="text-xs text-muted-foreground">Name</Label>
  <Input id="oai-name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label htmlFor="oai-prefix" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Prefix</Label>
+ <Label htmlFor="oai-prefix" className="text-xs text-muted-foreground">Prefix</Label>
  <Input id="oai-prefix" value={formData.prefix} onChange={(e) => setFormData({ ...formData, prefix: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">API Type</Label>
+ <Label className="text-xs text-muted-foreground">API Type</Label>
  <Select value={formData.apiType} onValueChange={(v) => setFormData({ ...formData, apiType: v as string })}>
  <SelectTrigger className="h-9 bg-muted/10 border-border/40"><SelectValue /></SelectTrigger>
  <SelectContent>
@@ -711,11 +711,11 @@ function AddOpenAICompatibleModal({ isOpen, onClose, onCreated }: { isOpen: bool
  </Select>
  </div>
  <div className="grid gap-2">
- <Label htmlFor="oai-base" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Base URL</Label>
+ <Label htmlFor="oai-base" className="text-xs text-muted-foreground">Base URL</Label>
  <Input id="oai-base" value={formData.baseUrl} onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label htmlFor="oai-key" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">API Key (Test)</Label>
+ <Label htmlFor="oai-key" className="text-xs text-muted-foreground">API Key (Test)</Label>
  <Input id="oai-key" type="password" value={checkKey} onChange={(e) => setCheckKey(e.target.value)} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="flex items-center gap-3">
@@ -775,19 +775,19 @@ function AddAnthropicCompatibleModal({ isOpen, onClose, onCreated }: { isOpen: b
  <DialogHeader><DialogTitle className="text-lg font-medium tracking-tight">Add Anthropic Compatible</DialogTitle></DialogHeader>
  <div className="space-y-4 pt-4">
  <div className="grid gap-2">
- <Label htmlFor="anth-name" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</Label>
+ <Label htmlFor="anth-name" className="text-xs text-muted-foreground">Name</Label>
  <Input id="anth-name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label htmlFor="anth-prefix" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Prefix</Label>
+ <Label htmlFor="anth-prefix" className="text-xs text-muted-foreground">Prefix</Label>
  <Input id="anth-prefix" value={formData.prefix} onChange={(e) => setFormData({ ...formData, prefix: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label htmlFor="anth-base" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Base URL</Label>
+ <Label htmlFor="anth-base" className="text-xs text-muted-foreground">Base URL</Label>
  <Input id="anth-base" value={formData.baseUrl} onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="grid gap-2">
- <Label htmlFor="anth-key" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">API Key (Test)</Label>
+ <Label htmlFor="anth-key" className="text-xs text-muted-foreground">API Key (Test)</Label>
  <Input id="anth-key" type="password" value={checkKey} onChange={(e) => setCheckKey(e.target.value)} className="h-9 bg-muted/10 border-border/40" />
  </div>
  <div className="flex items-center gap-3">
@@ -818,7 +818,7 @@ function ProviderTestResultsView({ results }: { results: any }) {
  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-muted/5 text-xs">
  <div className="flex flex-col gap-0.5">
  <span className="font-medium text-foreground">{r.connectionName}</span>
- <span className="text-muted-foreground/60 uppercase text-xs tracking-wider">{r.provider}</span>
+ <span className="text-xs text-muted-foreground">{r.provider}</span>
  </div>
  <Badge variant={r.valid ? "secondary" : "destructive"} className="text-xs h-5 px-1.5 border-none bg-primary/10 text-primary dark:text-primary font-bold">
  {r.valid ? "SUCCESS" : "FAILED"}
