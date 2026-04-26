@@ -5,6 +5,7 @@ import { cloakClaudeTools } from "../utils/claudeCloaking";
 import { filterToOpenAIFormat } from "./helpers/openaiHelper";
 import { normalizeThinkingConfig } from "../services/provider";
 import { cloakTools as cloakAntigravityTools } from "../utils/antigravityHelper";
+import { applyRtkFailOpen } from "../rtk";
 
 // Registry for translators
 const requestRegistry = new Map<string, Function>();
@@ -71,19 +72,23 @@ function stripContentTypes(body: any, stripList: string[] = []): void {
  * Translate request: source -> openai -> target
  */
 export function translateRequest(
-  sourceFormat: string, 
-  targetFormat: string, 
-  model: string, 
-  body: any, 
-  stream: boolean = true, 
-  credentials: any = null, 
-  provider: string | null = null, 
-  reqLogger: any = null, 
-  stripList: string[] = [], 
+  sourceFormat: string,
+  targetFormat: string,
+  model: string,
+  body: any,
+  stream: boolean = true,
+  credentials: any = null,
+  provider: string | null = null,
+  reqLogger: any = null,
+  stripList: string[] = [],
   connectionId: string | null | undefined = null
 ): any {
-  ensureInitialized();
+  if (sourceFormat !== targetFormat) {
+    ensureInitialized();
+  }
+
   let result = body;
+  result = applyRtkFailOpen(result);
 
   stripContentTypes(result, stripList);
   normalizeThinkingConfig(result);
