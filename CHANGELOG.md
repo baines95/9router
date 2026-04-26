@@ -1,3 +1,23 @@
+# v0.4.6-mini.1 (2026-04-26)
+
+This mini release selectively ports high-value runtime and provider improvements from the upstream 0.4.6 era while keeping 8Router intentionally slimmer, clearer, and easier to maintain than the full upstream surface area.
+
+## Upstream-selected improvements
+- Harden dashboard and local tooling access with explicit CLI token validation instead of localhost trust.
+- Make retry and backoff behavior status-aware, with cleaner fallback behavior and stronger runtime regression coverage.
+- Honor provider reset timing for cooldown handling so fallback and unavailable-account behavior are more accurate under rate limits.
+- Add RTK fail-open compression with a runtime toggle, preserving safer tool-output handling without forcing a broad upstream merge.
+- Preserve Kiro image attachments and structured message context more accurately in the request translation pipeline.
+- Add dynamic provider model fetching with static fallback behavior so provider setup remains usable even when live model discovery fails.
+
+## Fork-specific strengths
+- Keep the codebase TypeScript-first, which improves refactor safety, strengthens runtime and translator contracts, and lowers risk for future selective upstream ports.
+- Continue the fork’s cleaner shadcn/ui-based dashboard direction, with stronger hierarchy, denser-but-clearer provider/settings surfaces, and more consistent controls than the older upstream interface.
+
+## Notes
+- This release tracks the upstream 0.4.6 capability era in selected areas, not full upstream parity.
+- Slice 9 provider expansion is intentionally excluded from this mini release.
+
 # v0.3.96 (2026-04-17)
 
 ## Features
