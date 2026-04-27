@@ -117,6 +117,18 @@ function shouldAutoResumeConnection(connection: ProviderConnection | null | unde
   return !Number.isNaN(pausedUntilMs) && pausedUntilMs <= now;
 }
 
+function getQuotaSnapshotResetAt(connection: ProviderConnection, now: number, autoPauseEnabled: boolean): string | null {
+  if (!autoPauseEnabled) return null;
+  const quotaSnapshot = connection.providerSpecificData?.quotaSnapshot as QuotaSnapshot | undefined;
+  if (!quotaSnapshot) return null;
+  const snapshotState = getQuotaSnapshotState(quotaSnapshot, now);
+  return snapshotState.exhausted ? snapshotState.nextResetAt : null;
+}
+
+function isConnectionBlockedByQuotaSnapshot(connection: ProviderConnection, now: number, autoPauseEnabled: boolean): boolean {
+  return !!getQuotaSnapshotResetAt(connection, now, autoPauseEnabled);
+}
+
 function getQuotaResetAtMs(quota: any): number | null {
   const resetAt = quota?.resetAt;
   if (typeof resetAt !== "string" || !resetAt) return null;
@@ -286,6 +298,8 @@ export async function getProviderCredentials(provider: string, excludeConnection
 
     const settings = await getSettings();
     await autoResumePausedConnections(providerId, settings);
+    const autoPauseEnabled = isProviderAutoPauseEnabled(settings, providerId);
+    const now = Date.now();
     const connections = await getProviderConnections({ provider: providerId, isActive: true });
 
     if (connections.length === 0) {
@@ -303,17 +317,23 @@ export async function getProviderCredentials(provider: string, excludeConnection
       .map(c => {
         const excluded = excludeSet.has(c.id);
         const locked = isModelLockActive(c, model);
-        if (!excluded && !locked) return null;
-        const cooldownUntil = locked ? getEarliestModelLockUntil(c) : null;
-        const reason = excluded && locked ? "excluded+model-locked" : (excluded ? "excluded" : "model-locked");
+        const quotaBlocked = isConnectionBlockedByQuotaSnapshot(c, now, autoPauseEnabled);
+        if (!excluded && !locked && !quotaBlocked) return null;
+        const cooldownUntil = locked
+          ? getEarliestModelLockUntil(c)
+          : (quotaBlocked ? getQuotaSnapshotResetAt(c, now, autoPauseEnabled) : null);
+        const reason = excluded
+          ? (locked ? "excluded+model-locked" : (quotaBlocked ? "excluded+quota-exhausted" : "excluded"))
+          : (locked ? "model-locked" : "quota-exhausted");
         return { connection: c, reason, cooldownUntil };
       })
       .filter(Boolean) as Array<{ connection: ProviderConnection; reason: string; cooldownUntil: string | null }>;
 
-    // Filter out model-locked and excluded connections
+    // Filter out model-locked, quota-exhausted and excluded connections
     const availableConnections = connections.filter(c => {
       if (excludeSet.has(c.id)) return false;
       if (isModelLockActive(c, model)) return false;
+      if (isConnectionBlockedByQuotaSnapshot(c, now, autoPauseEnabled)) return false;
       return true;
     });
 

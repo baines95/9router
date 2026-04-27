@@ -1,10 +1,10 @@
 // Ensure proxyFetch is loaded to patch globalThis.fetch
 import "@/lib/open-sse/index";
 
-import { getProviderConnectionById, updateProviderConnection } from "@/lib/localDb";
+import { getProviderConnectionById, updateProviderConnection, getSettings } from "@/lib/localDb";
 import { getUsageForProvider } from "@/lib/open-sse/services/usage";
 import { getExecutor } from "@/lib/open-sse/executors/index";
-import { buildQuotaSnapshot, type QuotaSnapshotApiResponse } from "@/lib/usage/quotaSnapshot";
+import { buildQuotaSnapshot, getQuotaSnapshotState, type QuotaSnapshotApiResponse } from "@/lib/usage/quotaSnapshot";
 import { NextResponse } from "next/server";
 
 // Detect auth-expired messages returned by usage providers instead of throwing
@@ -102,7 +102,7 @@ async function refreshAndUpdateCredentials(connection: any, force = false): Prom
 /**
  * GET /api/usage/[connectionId] - Get usage data for a specific connection
  */
-export async function GET(request: Request, context: { params: Promise<{ connectionId: string }> }): Promise<Response> {
+export async function GET(_request: Request, context: { params: Promise<{ connectionId: string }> }): Promise<Response> {
   let connection: any;
   try {
     const { connectionId } = await context.params;
@@ -146,10 +146,22 @@ export async function GET(request: Request, context: { params: Promise<{ connect
     }
 
     const quotaSnapshot = buildQuotaSnapshot(connection.provider, usage, new Date().toISOString());
+    const settings = await getSettings();
+    const autoPauseEnabled = settings?.providerStrategies?.[connection.provider]?.autoPauseByQuota === true;
+    const snapshotState = getQuotaSnapshotState(quotaSnapshot);
+    const shouldAutoPause = autoPauseEnabled && snapshotState.exhausted;
+
     await updateProviderConnection(connection.id, {
+      ...(shouldAutoPause ? { isActive: false } : {}),
       providerSpecificData: {
         ...connection.providerSpecificData,
         quotaSnapshot,
+        ...(shouldAutoPause
+          ? {
+              autoPauseReason: "quota",
+              autoPausedUntil: snapshotState.nextResetAt,
+            }
+          : {}),
       },
     });
 

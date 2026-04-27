@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { translate } from "@/i18n/runtime";
 import CooldownTimer from "./CooldownTimer";
 import { getQuotaSnapshotState, type QuotaSnapshot } from "@/lib/usage/quotaSnapshot";
+import { formatResetTime } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/utils";
 
 interface Connection {
   id: string;
@@ -120,10 +121,18 @@ export default function ConnectionRow({
     return () => { if (interval) clearInterval(interval); };
   }, [connection, modelLockUntil]);
 
-  const quotaSnapshotState = connection.providerSpecificData?.quotaSnapshot
-    ? getQuotaSnapshotState(connection.providerSpecificData.quotaSnapshot)
-    : null;
-  const quotaResetAt = quotaSnapshotState?.exhausted ? quotaSnapshotState.nextResetAt : null;
+  const quotaSnapshot = connection.providerSpecificData?.quotaSnapshot as QuotaSnapshot | undefined;
+  const quotaSnapshotState = quotaSnapshot ? getQuotaSnapshotState(quotaSnapshot) : null;
+  const quotaResetAt = quotaSnapshotState?.nextResetAt
+    ?? quotaSnapshot?.buckets
+      ?.map((bucket) => bucket.resetAt)
+      .filter((resetAt): resetAt is string => Boolean(resetAt))
+      .map((resetAt) => ({ value: resetAt, ms: Date.parse(resetAt) }))
+      .filter((entry) => Number.isFinite(entry.ms) && entry.ms > Date.now())
+      .sort((a, b) => a.ms - b.ms)[0]
+      ?.value
+    ?? null;
+  const quotaResetCountdown = formatResetTime(quotaResetAt);
   const effectiveStatus = connection.testStatus === "unavailable" && !isCooldown ? "active" : connection.testStatus;
 
   const getStatusVariant = (): "success" | "error" | "default" => {
@@ -191,9 +200,9 @@ export default function ConnectionRow({
             {isCooldown && connection.isActive !== false && (
               <CooldownTimer until={modelLockUntil as string} />
             )}
-            {quotaResetAt && (
-              <span className="text-[10px] text-muted-foreground font-medium" title={quotaResetAt}>
-                Quota reset {new Date(quotaResetAt).toLocaleTimeString("vi-VN", { hour12: false })}
+            {quotaResetCountdown && (
+              <span className="text-[10px] text-muted-foreground font-medium" title={quotaResetAt || undefined}>
+                Quota reset {quotaResetCountdown}
               </span>
             )}
             {connection.lastError && connection.isActive !== false && (

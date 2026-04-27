@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { translate } from "@/i18n/runtime";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
 import { getQuotaSnapshotState, type QuotaSnapshot } from "@/lib/usage/quotaSnapshot";
+import { formatResetTime } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/utils";
 
 interface Connection {
   id: string;
@@ -123,10 +124,11 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, au
   const quotaSnapshotState = connection?.providerSpecificData?.quotaSnapshot
     ? getQuotaSnapshotState(connection.providerSpecificData.quotaSnapshot)
     : null;
-  const authorityAutoPausedUntil = quotaSnapshotState?.exhausted ? quotaSnapshotState.nextResetAt : null;
+  const authorityAutoPausedUntil = quotaSnapshotState?.nextResetAt ?? null;
   const statusLockedByAutoPause = autoPauseByQuota;
-  const autoPauseUntilLabel = authorityAutoPausedUntil
-    ? new Date(authorityAutoPausedUntil).toLocaleTimeString("vi-VN", { hour12: false })
+  const autoPauseUntilLabel = formatResetTime(authorityAutoPausedUntil);
+  const autoPauseUntilTitle = authorityAutoPausedUntil
+    ? new Date(authorityAutoPausedUntil).toLocaleString("vi-VN", { hour12: false })
     : null;
 
   const handleTest = async () => {
@@ -194,7 +196,7 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, au
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-medium">{translate("Status")}</span>
                 {statusLockedByAutoPause && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground" title={autoPauseUntilTitle || undefined}>
                     {autoPauseUntilLabel
                       ? translate("Auto paused until") + " " + autoPauseUntilLabel
                       : translate("Managed automatically by quota")}

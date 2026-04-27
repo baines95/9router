@@ -283,6 +283,48 @@ describe("account selection semantics regression harness", () => {
     expect(selected?.connectionName).toBe("A");
   });
 
+  it("skips an exhausted account from quotaSnapshot authority even without model lock", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      comboStrategy: "fill-first",
+      providerStrategies: {
+        openai: {
+          autoPauseByQuota: true,
+        },
+      },
+    });
+
+    vi.mocked(getProviderConnections).mockResolvedValue([
+      {
+        id: "exhausted-acc",
+        provider: "openai",
+        displayName: "Exhausted",
+        providerSpecificData: {
+          quotaSnapshot: {
+            provider: "openai",
+            fetchedAt: "2026-04-26T09:59:00.000Z",
+            buckets: [
+              {
+                name: "primary",
+                used: 100,
+                total: 100,
+                resetAt: "2099-01-01T00:00:00.000Z",
+                remainingPercentage: 0,
+              },
+            ],
+          },
+        },
+      },
+      {
+        id: "healthy-acc",
+        provider: "openai",
+        displayName: "Healthy",
+      },
+    ]);
+
+    const selected = await getProviderCredentials("openai", null, "gpt-4o-mini");
+    expect(selected?.connectionName).toBe("Healthy");
+  });
+
   it("cooldown visibility: success does not clear an active model lock before it expires", async () => {
     const futureLock = new Date(nowMs + 60_000).toISOString();
     vi.mocked(getProviderConnectionById).mockResolvedValue({

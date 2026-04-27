@@ -1,6 +1,6 @@
 {
   "name": "8router-tests",
-  "version": "1.0.0",
+  "version": "0.4.6-mini.2",
   "private": true,
   "type": "module",
   "description": "Unit tests for 8router embeddings endpoint",
