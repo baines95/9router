@@ -4,6 +4,9 @@
 - Gom toàn bộ quota về một canonical authority chung bằng `quotaSnapshot`, lưu trực tiếp trên connection thay vì để UI và runtime tự diễn giải mỗi nơi một kiểu.
 - `GET /api/usage/[connectionId]` giờ persist và trả về quota authority mới; `POST /api/providers/[id]/quota-sync` cũng dùng cùng nguồn đó để auto-pause/auto-resume.
 - Dashboard quota, provider page, edit modal, và runtime auth cùng đọc chung reset/exhausted state, đồng thời loại bỏ nhánh parse quota cũ ở UI để tránh drift.
+- Migrate toàn bộ `cloud/src` từ JavaScript sang TypeScript để đồng bộ với codebase chính hơn.
+- Thêm `cloud` typecheck bootstrap, chuyển Worker entry sang `src/index.ts`, và giữ nguyên các route cloud hiện có.
+- Khôi phục wiring cho `/{machineId}/v1/messages/count_tokens`, giữ compatibility cho `/testClaude`, và sửa sync merge để không làm rơi provider chỉ có ở Worker.
 
 # v0.4.6-mini.1 (2026-04-26)
 
