@@ -2,24 +2,26 @@ import { initTranslators } from "open-sse/translator/index.js";
 import { ollamaModels } from "open-sse/config/ollamaModels.js";
 import { transformToOllama } from "open-sse/utils/ollamaTransform.js";
 import * as log from "./utils/logger.js";
+import type { Env, ExecutionContextLike, WorkerModule, WorkerScheduledEvent } from "./types";
 
 // Static imports for handlers (avoid dynamic import CPU cost)
-import { handleCleanup } from "./handlers/cleanup.js";
-import { handleCacheClear } from "./handlers/cache.js";
-import { handleSync } from "./handlers/sync.js";
-import { handleChat } from "./handlers/chat.js";
-import { handleVerify } from "./handlers/verify.js";
-import { handleTestClaude } from "./handlers/testClaude.js";
-import { handleForward } from "./handlers/forward.js";
-import { handleForwardRaw } from "./handlers/forwardRaw.js";
-import { handleEmbeddings } from "./handlers/embeddings.js";
+import { handleCleanup } from "./handlers/cleanup";
+import { handleCacheClear } from "./handlers/cache";
+import { handleSync } from "./handlers/sync";
+import { handleChat } from "./handlers/chat";
+import { handleVerify } from "./handlers/verify";
+import { handleForward } from "./handlers/forward";
+import { handleForwardRaw } from "./handlers/forwardRaw";
+import { handleEmbeddings } from "./handlers/embeddings";
+import { handleCountTokens } from "./handlers/countTokens";
+import { handleTestClaude } from "./handlers/testClaude";
 import { createLandingPageResponse } from "./services/landingPage.js";
 
 // Initialize translators at module load (static imports)
 initTranslators();
 
 // Helper to add CORS headers to response
-function addCorsHeaders(response) {
+function addCorsHeaders(response: Response): Response {
   const newHeaders = new Headers(response.headers);
   newHeaders.set("Access-Control-Allow-Origin", "*");
   newHeaders.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
@@ -31,13 +33,13 @@ function addCorsHeaders(response) {
   });
 }
 
-const worker = {
-  async scheduled(event, env, ctx) {
+const worker: WorkerModule = {
+  async scheduled(_event: WorkerScheduledEvent, env: Env, _ctx: ExecutionContextLike): Promise<void> {
     const result = await handleCleanup(env);
-    log.info("SCHEDULED", "Cleanup completed", result);
+    log.info("SCHEDULED", "Cleanup completed", result as unknown as Record<string, unknown>);
   },
 
-  async fetch(request, env, ctx) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
     const startTime = Date.now();
     const url = new URL(request.url);
     let path = url.pathname;
@@ -64,7 +66,7 @@ const worker = {
 
     try {
       // Routes
-      
+
       // Landing page
       if (path === "/" && request.method === "GET") {
         const response = createLandingPageResponse();
@@ -101,7 +103,7 @@ const worker = {
       }
 
       // ========== NEW FORMAT: /v1/... (machineId in API key) ==========
-      
+
       // New format: /v1/chat/completions
       if (path === "/v1/chat/completions" && request.method === "POST") {
         const response = await handleChat(request, env, ctx, null);
@@ -140,7 +142,7 @@ const worker = {
       // New format: /v1/api/chat (Ollama format)
       if (path === "/v1/api/chat" && request.method === "POST") {
         const clonedReq = request.clone();
-        const body = await clonedReq.json();
+        const body = await clonedReq.json() as { model?: string };
         const response = await handleChat(request, env, ctx, null);
         const ollamaResponse = transformToOllama(response, body.model || "llama3.2");
         log.response(200, Date.now() - startTime);
@@ -173,11 +175,18 @@ const worker = {
         return response;
       }
 
+      // Machine ID based count_tokens endpoint (Claude format)
+      if (path.match(/^\/[^\/]+\/v1\/messages\/count_tokens$/) && request.method === "POST") {
+        const response = await handleCountTokens(request, env);
+        log.response(response.status, Date.now() - startTime);
+        return response;
+      }
+
       // Machine ID based api/chat endpoint (Ollama format)
       if (path.match(/^\/[^\/]+\/v1\/api\/chat$/) && request.method === "POST") {
         const machineId = path.split("/")[1];
         const clonedReq = request.clone();
-        const body = await clonedReq.json();
+        const body = await clonedReq.json() as { model?: string };
         const response = await handleChat(request, env, ctx, machineId);
         const ollamaResponse = transformToOllama(response, body.model || "llama3.2");
         log.response(200, Date.now() - startTime);
@@ -192,7 +201,7 @@ const worker = {
         return response;
       }
 
-      // Test Claude - forward to Anthropic API
+      // Test Claude endpoint
       if (path === "/testClaude" && request.method === "POST") {
         const response = await handleTestClaude(request);
         log.response(response.status, Date.now() - startTime);
@@ -219,9 +228,11 @@ const worker = {
         headers: { "Content-Type": "application/json" }
       });
 
-    } catch (error) {
-      log.error("ROUTER", error.message, { stack: error.stack });
-      return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      log.error("ROUTER", message, { stack });
+      return new Response(JSON.stringify({ error: message }), {
         status: 500,
         headers: { "Content-Type": "application/json" }
       });
@@ -230,4 +241,3 @@ const worker = {
 };
 
 export default worker;
-

@@ -1,10 +1,14 @@
 import { connect } from "cloudflare:sockets";
+import type { ForwardRequestBody } from "../types";
+
+type ConnectFn = typeof connect;
+type SocketLike = ReturnType<ConnectFn>;
 
 // Forward request via raw TCP socket (bypasses CF auto headers)
-export async function handleForwardRaw(request) {
+export async function handleForwardRaw(request: Request): Promise<Response> {
   try {
-    const { targetUrl, headers = {}, body } = await request.json();
-    
+    const { targetUrl, headers = {}, body } = (await request.json()) as ForwardRequestBody;
+
     if (!targetUrl) {
       return new Response(JSON.stringify({ error: "targetUrl is required" }), {
         status: 400,
@@ -14,37 +18,38 @@ export async function handleForwardRaw(request) {
 
     const url = new URL(targetUrl);
     const host = url.hostname;
-    const port = url.port || (url.protocol === "https:" ? 443 : 80);
+    const port = url.port || (url.protocol === "https:" ? "443" : "80");
     const path = url.pathname + url.search;
     const isHttps = url.protocol === "https:";
 
     console.log("[FORWARD_RAW] Connecting to:", host, port, isHttps ? "(TLS)" : "");
 
     // Connect to target server
-    let secureSocket;
+    let secureSocket: SocketLike;
     if (isHttps) {
       // For HTTPS, connect directly with TLS enabled
       console.log("[FORWARD_RAW] Creating TLS socket...");
-      secureSocket = connect({ 
-        hostname: host, 
-        port: parseInt(port),
+      secureSocket = connect({
+        hostname: host,
+        port: parseInt(port, 10),
         secureTransport: "on"
       });
       console.log("[FORWARD_RAW] TLS socket created");
     } else {
-      secureSocket = connect({ hostname: host, port: parseInt(port) });
+      secureSocket = connect({ hostname: host, port: parseInt(port, 10) });
     }
 
     console.log("[FORWARD_RAW] Socket object:", secureSocket);
     console.log("[FORWARD_RAW] Socket opened:", secureSocket.opened);
-    
+
     // Wait for socket to be ready
     try {
       console.log("[FORWARD_RAW] Waiting for socket to open...");
       await secureSocket.opened;
       console.log("[FORWARD_RAW] Socket opened successfully");
-    } catch (openError) {
-      console.error("[FORWARD_RAW] Socket open error:", openError.message);
+    } catch (openError: unknown) {
+      const message = openError instanceof Error ? openError.message : String(openError);
+      console.error("[FORWARD_RAW] Socket open error:", message);
       throw openError;
     }
 
@@ -55,7 +60,7 @@ export async function handleForwardRaw(request) {
 
     // Build raw HTTP request
     const bodyStr = JSON.stringify(body);
-    const requestHeaders = {
+    const requestHeaders: Record<string, string> = {
       "Host": host,
       "Content-Type": "application/json",
       "Content-Length": new TextEncoder().encode(bodyStr).length.toString(),
@@ -80,8 +85,9 @@ export async function handleForwardRaw(request) {
       console.log("[FORWARD_RAW] Write complete, closing writer...");
       await writer.close();
       console.log("[FORWARD_RAW] Writer closed");
-    } catch (writeError) {
-      console.error("[FORWARD_RAW] Write error:", writeError.message);
+    } catch (writeError: unknown) {
+      const message = writeError instanceof Error ? writeError.message : String(writeError);
+      console.error("[FORWARD_RAW] Write error:", message);
       throw writeError;
     }
 
@@ -90,7 +96,7 @@ export async function handleForwardRaw(request) {
     let responseData = new Uint8Array(0);
     let attempts = 0;
     const maxAttempts = 100; // 10 seconds max
-    
+
     while (attempts < maxAttempts) {
       console.log("[FORWARD_RAW] Reading attempt:", attempts);
       const { done, value } = await reader.read();
@@ -101,16 +107,16 @@ export async function handleForwardRaw(request) {
         newData.set(responseData);
         newData.set(value, responseData.length);
         responseData = newData;
-        
+
         // Check if we have complete response (has headers end marker)
         const text = new TextDecoder().decode(responseData);
         if (text.includes("\r\n\r\n")) {
           // Check if we have Content-Length and received all body
           const headerEnd = text.indexOf("\r\n\r\n");
-          const headers = text.substring(0, headerEnd).toLowerCase();
-          const contentLengthMatch = headers.match(/content-length:\s*(\d+)/);
+          const lowerHeaders = text.substring(0, headerEnd).toLowerCase();
+          const contentLengthMatch = lowerHeaders.match(/content-length:\s*(\d+)/);
           if (contentLengthMatch) {
-            const expectedLength = parseInt(contentLengthMatch[1]);
+            const expectedLength = parseInt(contentLengthMatch[1], 10);
             const bodyReceived = text.length - headerEnd - 4;
             if (bodyReceived >= expectedLength) {
               console.log("[FORWARD_RAW] Complete response received");
@@ -121,7 +127,7 @@ export async function handleForwardRaw(request) {
       }
       attempts++;
     }
-    
+
     console.log("[FORWARD_RAW] Read loop finished, total bytes:", responseData.length);
 
     const responseText = new TextDecoder().decode(responseData);
@@ -140,10 +146,10 @@ export async function handleForwardRaw(request) {
     // Parse status line
     const statusLine = headerPart.split("\r\n")[0];
     const statusMatch = statusLine.match(/HTTP\/[\d.]+ (\d+)/);
-    const status = statusMatch ? parseInt(statusMatch[1]) : 200;
+    const status = statusMatch ? parseInt(statusMatch[1], 10) : 200;
 
     // Parse headers
-    const responseHeaders = {};
+    const responseHeaders: Record<string, string> = {};
     const headerLines = headerPart.split("\r\n").slice(1);
     for (const line of headerLines) {
       const colonIndex = line.indexOf(":");
@@ -162,12 +168,13 @@ export async function handleForwardRaw(request) {
       }
     });
 
-  } catch (error) {
-    console.error("[FORWARD_RAW] Error:", error.message, error.stack);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("[FORWARD_RAW] Error:", message, stack);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
   }
 }
-

@@ -6,12 +6,14 @@
   "description": "8Router Cloud Worker - Self-hosted Cloudflare Worker proxy",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "open-sse": "file:../src/lib/open-sse"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.0.0",
+    "typescript": "^5.9.3"
   }
 }

@@ -5,12 +5,14 @@
  * - Old: sk-{random8}
  */
 
+import type { ParsedApiKey } from "../types";
+
 const API_KEY_SECRET = "endpoint-proxy-api-key-secret";
 
 /**
  * Generate CRC (8-char HMAC) using Web Crypto API
  */
-async function generateCrc(machineId, keyId) {
+async function generateCrc(machineId: string, keyId: string): Promise<string> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(API_KEY_SECRET);
   const data = encoder.encode(machineId + keyId);
@@ -32,10 +34,10 @@ async function generateCrc(machineId, keyId) {
 
 /**
  * Parse API key and extract machineId + keyId
- * @param {string} apiKey
- * @returns {Promise<{ machineId: string, keyId: string, isNewFormat: boolean } | null>}
  */
-export async function parseApiKey(apiKey) {
+export async function parseApiKey(
+  apiKey: string | null | undefined
+): Promise<ParsedApiKey | null> {
   if (!apiKey || !apiKey.startsWith("sk-")) return null;
 
   const parts = apiKey.split("-");
@@ -61,10 +63,8 @@ export async function parseApiKey(apiKey) {
 
 /**
  * Extract Bearer token from Authorization header
- * @param {Request} request
- * @returns {string | null}
  */
-export function extractBearerToken(request) {
+export function extractBearerToken(request: Request): string | null {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
   return authHeader.slice(7);

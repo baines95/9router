@@ -1,3 +1,14 @@
+import type { ForwardRequestBody } from "../types";
+
+interface FetchWithCf extends RequestInit {
+  cf?: {
+    scrapeShield?: boolean;
+    minify?: boolean;
+    mirage?: boolean;
+    polish?: "off" | "lossless" | "lossy";
+  };
+}
+
 // CF headers to remove
 const CF_HEADERS = [
   "cf-connecting-ip", "cf-connecting-ip6", "cf-ray", "cf-visitor",
@@ -6,12 +17,12 @@ const CF_HEADERS = [
 ];
 
 // Forward request to any endpoint
-export async function handleForward(request) {
+export async function handleForward(request: Request): Promise<Response> {
   try {
     const url = new URL(request.url);
     const clientIp = request.headers.get("CF-Connecting-IP") || "";
-    const { targetUrl, headers = {}, body } = await request.json();
-    
+    const { targetUrl, headers = {}, body } = (await request.json()) as ForwardRequestBody;
+
     if (!targetUrl) {
       return new Response(JSON.stringify({ error: "targetUrl is required" }), {
         status: 400,
@@ -20,7 +31,7 @@ export async function handleForward(request) {
     }
 
     // Filter out CF headers from input
-    const cleanHeaders = {};
+    const cleanHeaders: Record<string, string> = {};
     for (const [key, value] of Object.entries(headers)) {
       if (!CF_HEADERS.includes(key.toLowerCase())) {
         cleanHeaders[key] = value;
@@ -55,7 +66,7 @@ export async function handleForward(request) {
         mirage: false,
         polish: "off"
       }
-    });
+    } as FetchWithCf);
 
     // Stream response back to client
     return new Response(response.body, {
@@ -65,9 +76,10 @@ export async function handleForward(request) {
         "Access-Control-Allow-Origin": "*"
       }
     });
-  } catch (error) {
-    console.error("[FORWARD] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[FORWARD] Error:", message);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });

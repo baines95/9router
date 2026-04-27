@@ -1,29 +1,65 @@
 import { getModelInfoCore } from "open-sse/services/model.js";
 import { handleChatCore } from "open-sse/handlers/chatCore.js";
 import { errorResponse } from "open-sse/utils/error.js";
-import { checkFallbackError, isAccountUnavailable, getUnavailableUntil, getEarliestRateLimitedUntil, formatRetryAfter } from "open-sse/services/accountFallback.js";
+import {
+  checkFallbackError,
+  isAccountUnavailable,
+  getUnavailableUntil,
+  getEarliestRateLimitedUntil,
+  formatRetryAfter
+} from "open-sse/services/accountFallback.js";
 import { getComboModelsFromData, handleComboChat } from "open-sse/services/combo.js";
 import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import * as log from "../utils/logger.js";
 import { refreshTokenByProvider } from "../services/tokenRefresh.js";
 import { parseApiKey, extractBearerToken } from "../utils/apiKey.js";
 import { getMachineData, saveMachineData } from "../services/storage.js";
+import type {
+  Env,
+  ExecutionContextLike,
+  MachineCredentials,
+  MachineData,
+  MachineProviderRecord,
+  RateLimitResult
+} from "../types";
+
+type ChatRequestBody = Record<string, unknown> & {
+  model?: string;
+  stream?: boolean;
+};
+
+type CoreResult = {
+  success: boolean;
+  response: Response;
+  status?: number;
+  error?: unknown;
+};
+
+type CredentialsUpdate = {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  [key: string]: unknown;
+};
+
+type ProviderSelection = MachineCredentials | RateLimitResult | null;
 
 const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
-async function getModelInfo(modelStr, machineId, env) {
+async function getModelInfo(modelStr: string, machineId: string, env: Env) {
   const data = await getMachineData(machineId, env);
   return getModelInfoCore(modelStr, data?.modelAliases || {});
 }
 
 /**
  * Handle chat request
- * @param {Request} request
- * @param {Object} env
- * @param {Object} ctx
- * @param {string|null} machineIdOverride - machineId from URL (old format) or null (new format - extract from key)
  */
-export async function handleChat(request, env, ctx, machineIdOverride = null) {
+export async function handleChat(
+  request: Request,
+  env: Env,
+  _ctx: ExecutionContextLike,
+  machineIdOverride: string | null = null
+): Promise<Response> {
   if (request.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -36,19 +72,19 @@ export async function handleChat(request, env, ctx, machineIdOverride = null) {
 
   // Determine machineId: from URL (old) or from API key (new)
   let machineId = machineIdOverride;
-  
+
   if (!machineId) {
     // New format: extract machineId from API key
     const apiKey = extractBearerToken(request);
     if (!apiKey) return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Missing API key");
-    
+
     const parsed = await parseApiKey(apiKey);
     if (!parsed) return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key format");
-    
+
     if (!parsed.isNewFormat || !parsed.machineId) {
       return errorResponse(HTTP_STATUS.BAD_REQUEST, "API key does not contain machineId. Use /{machineId}/v1/... endpoint for old format keys.");
     }
-    
+
     machineId = parsed.machineId;
   }
 
@@ -56,9 +92,9 @@ export async function handleChat(request, env, ctx, machineIdOverride = null) {
     return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
   }
 
-  let body;
+  let body: ChatRequestBody;
   try {
-    body = await request.json();
+    body = (await request.json()) as ChatRequestBody;
   } catch {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid JSON body");
   }
@@ -71,13 +107,13 @@ export async function handleChat(request, env, ctx, machineIdOverride = null) {
   // Check if model is a combo
   const data = await getMachineData(machineId, env);
   const comboModels = getComboModelsFromData(modelStr, data?.combos || []);
-  
+
   if (comboModels) {
     log.info("COMBO", `"${modelStr}" with ${comboModels.length} models`);
     return handleComboChat({
       body,
       models: comboModels,
-      handleSingleModel: (reqBody, model) => handleSingleModelChat(reqBody, model, machineId, env),
+      handleSingleModel: (reqBody: ChatRequestBody, model: string) => handleSingleModelChat(reqBody, model, machineId as string, env),
       log
     });
   }
@@ -89,23 +125,29 @@ export async function handleChat(request, env, ctx, machineIdOverride = null) {
 /**
  * Handle single model chat request
  */
-async function handleSingleModelChat(body, modelStr, machineId, env) {
+async function handleSingleModelChat(
+  body: ChatRequestBody,
+  modelStr: string,
+  machineId: string,
+  env: Env
+): Promise<Response> {
   const modelInfo = await getModelInfo(modelStr, machineId, env);
   if (!modelInfo.provider) return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid model format");
 
-  const { provider, model } = modelInfo;
+  const provider = modelInfo.provider as string;
+  const model = modelInfo.model as string;
   log.info("MODEL", `${provider.toUpperCase()} | ${model}`);
 
-  let excludeConnectionId = null;
-  let lastError = null;
-  let lastStatus = null;
+  let excludeConnectionId: string | null = null;
+  let lastError: unknown = null;
+  let lastStatus: number | null = null;
 
   while (true) {
     const credentials = await getProviderCredentials(machineId, provider, env, excludeConnectionId);
-    if (!credentials || credentials.allRateLimited) {
-      if (credentials?.allRateLimited) {
+    if (!credentials || isRateLimited(credentials)) {
+      if (credentials && isRateLimited(credentials)) {
         const retryAfterSec = Math.ceil((new Date(credentials.retryAfter).getTime() - Date.now()) / 1000);
-        const errorMsg = lastError || credentials.lastError || "Unavailable";
+        const errorMsg = (lastError as string | null) || credentials.lastError || "Unavailable";
         const msg = `[${provider}/${model}] ${errorMsg} (${credentials.retryAfterHuman})`;
         const status = lastStatus || Number(credentials.lastErrorCode) || HTTP_STATUS.SERVICE_UNAVAILABLE;
         log.warn("CHAT", `${provider.toUpperCase()} | ${msg}`);
@@ -119,7 +161,7 @@ async function handleSingleModelChat(body, modelStr, machineId, env) {
       }
       log.warn("CHAT", `${provider.toUpperCase()} | no more accounts`);
       return new Response(
-        JSON.stringify({ error: lastError || "All accounts unavailable" }),
+        JSON.stringify({ error: (lastError as string | null) || "All accounts unavailable" }),
         { status: lastStatus || HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -127,21 +169,21 @@ async function handleSingleModelChat(body, modelStr, machineId, env) {
     log.debug("CHAT", `account=${credentials.id}`, { provider });
 
     const refreshedCredentials = await checkAndRefreshToken(machineId, provider, credentials, env);
-    
+
     // Use shared chatCore
-    const result = await handleChatCore({
+    const result = (await handleChatCore({
       body,
       modelInfo: { provider, model },
       credentials: refreshedCredentials,
       log,
-      onCredentialsRefreshed: async (newCreds) => {
+      onCredentialsRefreshed: async (newCreds: CredentialsUpdate) => {
         await updateCredentials(machineId, credentials.id, newCreds, env);
       },
       onRequestSuccess: async () => {
         // Clear error status only if currently has error (optimization)
         await clearAccountError(machineId, credentials.id, credentials, env);
       }
-    });
+    })) as CoreResult;
 
     if (result.success) return result.response;
 
@@ -149,10 +191,10 @@ async function handleSingleModelChat(body, modelStr, machineId, env) {
 
     if (shouldFallback) {
       log.warn("FALLBACK", `${provider.toUpperCase()} | ${credentials.id} | ${result.status}`);
-      await markAccountUnavailable(machineId, credentials.id, result.status, result.error, env);
+      await markAccountUnavailable(machineId, credentials.id, result.status ?? 0, result.error, env);
       excludeConnectionId = credentials.id;
       lastError = result.error;
-      lastStatus = result.status;
+      lastStatus = result.status ?? null;
       continue;
     }
 
@@ -160,7 +202,16 @@ async function handleSingleModelChat(body, modelStr, machineId, env) {
   }
 }
 
-async function checkAndRefreshToken(machineId, provider, credentials, env) {
+function isRateLimited(value: ProviderSelection): value is RateLimitResult {
+  return Boolean(value && "allRateLimited" in value && value.allRateLimited);
+}
+
+async function checkAndRefreshToken(
+  machineId: string,
+  provider: string,
+  credentials: MachineCredentials,
+  env: Env
+): Promise<MachineCredentials> {
   if (!credentials.expiresAt) return credentials;
 
   const expiresAt = new Date(credentials.expiresAt).getTime();
@@ -168,7 +219,7 @@ async function checkAndRefreshToken(machineId, provider, credentials, env) {
 
   log.debug("TOKEN", `${provider.toUpperCase()} | expiring, refreshing`);
 
-  const newCredentials = await refreshTokenByProvider(provider, credentials);
+  const newCredentials = await refreshTokenByProvider(provider, credentials) as CredentialsUpdate | null;
   if (newCredentials?.accessToken) {
     await updateCredentials(machineId, credentials.id, newCredentials, env);
     return {
@@ -184,7 +235,7 @@ async function checkAndRefreshToken(machineId, provider, credentials, env) {
   return credentials;
 }
 
-async function validateApiKey(request, machineId, env) {
+async function validateApiKey(request: Request, machineId: string, env: Env): Promise<boolean> {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;
 
@@ -193,28 +244,34 @@ async function validateApiKey(request, machineId, env) {
   return data?.apiKeys?.some(k => k.key === apiKey) || false;
 }
 
-async function getProviderCredentials(machineId, provider, env, excludeConnectionId = null) {
-  const data = await getMachineData(machineId, env);
+async function getProviderCredentials(
+  machineId: string,
+  provider: string,
+  env: Env,
+  excludeConnectionId: string | null = null
+): Promise<ProviderSelection> {
+  const data = await getMachineData(machineId, env) as MachineData | null;
   if (!data?.providers) return null;
 
   const providerConnections = Object.entries(data.providers)
     .filter(([connId, conn]) => {
-      if (conn.provider !== provider || !conn.isActive) return false;
+      const record = conn as MachineProviderRecord;
+      if (record.provider !== provider || !record.isActive) return false;
       if (excludeConnectionId && connId === excludeConnectionId) return false;
-      if (isAccountUnavailable(conn.rateLimitedUntil)) return false;
+      if (isAccountUnavailable(record.rateLimitedUntil)) return false;
       return true;
     })
-    .sort((a, b) => (a[1].priority || 999) - (b[1].priority || 999));
+    .sort((a, b) => ((a[1] as MachineProviderRecord).priority || 999) - ((b[1] as MachineProviderRecord).priority || 999));
 
   if (providerConnections.length === 0) {
     // Check if accounts exist but all rate limited
     const allConnections = Object.entries(data.providers)
-      .filter(([, conn]) => conn.provider === provider && conn.isActive)
-      .map(([, conn]) => conn);
+      .filter(([, conn]) => (conn as MachineProviderRecord).provider === provider && (conn as MachineProviderRecord).isActive)
+      .map(([, conn]) => conn as MachineProviderRecord);
     const earliest = getEarliestRateLimitedUntil(allConnections);
     if (earliest) {
       const rateLimitedConns = allConnections.filter(c => c.rateLimitedUntil && new Date(c.rateLimitedUntil).getTime() > Date.now());
-      const earliestConn = rateLimitedConns.sort((a, b) => new Date(a.rateLimitedUntil) - new Date(b.rateLimitedUntil))[0];
+      const earliestConn = rateLimitedConns.sort((a, b) => new Date(a.rateLimitedUntil || 0).getTime() - new Date(b.rateLimitedUntil || 0).getTime())[0];
       return {
         allRateLimited: true,
         retryAfter: earliest,
@@ -226,7 +283,7 @@ async function getProviderCredentials(machineId, provider, env, excludeConnectio
     return null;
   }
 
-  const [connectionId, connection] = providerConnections[0];
+  const [connectionId, connection] = providerConnections[0] as [string, MachineProviderRecord];
 
   return {
     id: connectionId,
@@ -244,8 +301,14 @@ async function getProviderCredentials(machineId, provider, env, excludeConnectio
   };
 }
 
-async function markAccountUnavailable(machineId, connectionId, status, errorText, env) {
-  const data = await getMachineData(machineId, env);
+async function markAccountUnavailable(
+  machineId: string,
+  connectionId: string,
+  status: number,
+  errorText: unknown,
+  env: Env
+): Promise<void> {
+  const data = await getMachineData(machineId, env) as MachineData | null;
   if (!data?.providers?.[connectionId]) return;
 
   const conn = data.providers[connectionId];
@@ -266,15 +329,20 @@ async function markAccountUnavailable(machineId, connectionId, status, errorText
   log.warn("ACCOUNT", `${connectionId} | unavailable until ${rateLimitedUntil} (backoff=${newBackoffLevel ?? backoffLevel})`);
 }
 
-async function clearAccountError(machineId, connectionId, currentCredentials, env) {
+async function clearAccountError(
+  machineId: string,
+  connectionId: string,
+  currentCredentials: MachineCredentials,
+  env: Env
+): Promise<void> {
   // Only update if currently has error status (optimization)
   const hasError = currentCredentials.status === "unavailable" ||
                    currentCredentials.lastError ||
                    currentCredentials.rateLimitedUntil;
-  
+
   if (!hasError) return; // Skip if already clean
 
-  const data = await getMachineData(machineId, env);
+  const data = await getMachineData(machineId, env) as MachineData | null;
   if (!data?.providers?.[connectionId]) return;
 
   data.providers[connectionId].status = "active";
@@ -288,8 +356,13 @@ async function clearAccountError(machineId, connectionId, currentCredentials, en
   log.info("ACCOUNT", `${connectionId} | error cleared`);
 }
 
-async function updateCredentials(machineId, connectionId, newCredentials, env) {
-  const data = await getMachineData(machineId, env);
+async function updateCredentials(
+  machineId: string,
+  connectionId: string,
+  newCredentials: CredentialsUpdate,
+  env: Env
+): Promise<void> {
+  const data = await getMachineData(machineId, env) as MachineData | null;
   if (!data?.providers?.[connectionId]) return;
 
   data.providers[connectionId].accessToken = newCredentials.accessToken;

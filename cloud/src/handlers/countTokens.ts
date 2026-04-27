@@ -1,4 +1,5 @@
 import { errorResponse } from "open-sse/utils/error.js";
+import type { CountTokensBody, Env } from "../types";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -10,10 +11,10 @@ const CORS_HEADERS = {
  * Handle POST /{machineId}/v1/messages/count_tokens
  * Mock token count response based on content length
  */
-export async function handleCountTokens(request, env) {
-  let body;
+export async function handleCountTokens(request: Request, _env: Env): Promise<Response> {
+  let body: CountTokensBody;
   try {
-    body = await request.json();
+    body = (await request.json()) as CountTokensBody;
   } catch {
     return errorResponse(400, "Invalid JSON body");
   }
@@ -21,7 +22,7 @@ export async function handleCountTokens(request, env) {
   // Estimate token count based on content length
   const messages = body.messages || [];
   let totalChars = 0;
-  
+
   for (const msg of messages) {
     if (typeof msg.content === "string") {
       totalChars += msg.content.length;
@@ -43,4 +44,3 @@ export async function handleCountTokens(request, env) {
     headers: { "Content-Type": "application/json", ...CORS_HEADERS }
   });
 }
-
