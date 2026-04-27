@@ -1,4 +1,4 @@
-import { getProviderConnections, validateApiKey, updateProviderConnection, getSettings, type ProviderConnection } from "@/lib/localDb";
+import { getProviderConnections, getProviderConnectionById, validateApiKey, updateProviderConnection, getSettings, type ProviderConnection } from "@/lib/localDb";
 import { resolveConnectionProxyConfig } from "@/lib/network/connectionProxy";
 import { formatRetryAfter, checkFallbackError, isModelLockActive, buildModelLockUpdate, getEarliestModelLockUntil } from "@/lib/open-sse/services/accountFallback";
 import { BACKOFF_CONFIG } from "@/lib/open-sse/config/errorConfig";
@@ -27,8 +27,73 @@ function formatCooldownUntil(iso: string | null): string {
   return iso || "n/a";
 }
 
+function formatShortCooldownUntil(iso: string | null): string {
+  if (!iso) return "n/a";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toISOString().slice(11, 19);
+}
+
 function formatAuthCtx(providerId: string, model: string | null, mode: string): string {
   return `provider=${providerId} model=${model || "__all"} mode=${mode}`;
+}
+
+function createRequestTag(): string {
+  return Math.random().toString(36).slice(2, 6);
+}
+
+function getAuthEventIcon(event: string): string {
+  switch (event) {
+    case "SCAN":
+      return "🧭";
+    case "SKIP":
+      return "⏭️";
+    case "SELECT":
+      return "✅";
+    case "LOCK":
+      return "🔒";
+    case "CLEAR":
+      return "🧹";
+    case "EXHAUSTED":
+      return "⛔";
+    default:
+      return "•";
+  }
+}
+
+function formatSkippedConnections(
+  items: Array<{ connection: ProviderConnection; reason: string; cooldownUntil: string | null }>,
+  maxItems: number = 6,
+): string {
+  if (items.length === 0) return "";
+  const visibleItems = items.slice(0, maxItems).map((item) => (
+    `${formatAccountRef(item.connection)}:${item.reason}@${formatShortCooldownUntil(item.cooldownUntil)}`
+  ));
+  const hiddenCount = items.length - visibleItems.length;
+  if (hiddenCount > 0) {
+    visibleItems.push(`... +${hiddenCount} more`);
+  }
+  return `[${visibleItems.join(", ")}]`;
+}
+
+function formatAuthEvent(requestTag: string, event: string, message: string): string {
+  return `${getAuthEventIcon(event)} [r=${requestTag}] ${event} ${message}`;
+}
+
+function formatModelLabel(model: string | null): string {
+  return model || "__all";
+}
+
+function getAuthRequestTag(excludeSet: Set<string>): string {
+  const state = excludeSet as Set<string> & { __authRequestTag?: string };
+  if (!state.__authRequestTag) {
+    state.__authRequestTag = createRequestTag();
+  }
+  return state.__authRequestTag;
+}
+
+function formatErrorDetail(errorText: string): string {
+  return errorText.length > 100 ? errorText.slice(0, 100) : errorText;
 }
 
 function shouldEmitClearLog(contextKey: string): boolean {
@@ -121,6 +186,7 @@ export async function getProviderCredentials(provider: string, excludeConnection
     const providerOverride = (settings.providerStrategies || {})[providerId] || {};
     const strategy = providerOverride.fallbackStrategy || settings.comboStrategy || "fill-first";
     const authCtx = formatAuthCtx(providerId, model, strategy);
+    const requestTag = getAuthRequestTag(excludeSet);
 
     const skippedConnections = connections
       .map(c => {
@@ -140,10 +206,10 @@ export async function getProviderCredentials(provider: string, excludeConnection
       return true;
     });
 
-    log.info("AUTH", `[AUTH] ${authCtx} accounts=${connections.length} usable=${availableConnections.length} skipped=${skippedConnections.length}`);
-    skippedConnections.forEach(item => {
-      log.debug("AUTH", `[AUTH] ${authCtx} skip account=${formatAccountRef(item.connection)} reason=${item.reason} cooldownUntil=${formatCooldownUntil(item.cooldownUntil)}`);
-    });
+    log.info("AUTH", formatAuthEvent(requestTag, "SCAN", `${authCtx} accounts=${connections.length} usable=${availableConnections.length} skipped=${skippedConnections.length}`));
+    if (skippedConnections.length > 0) {
+      log.debug("AUTH", formatAuthEvent(requestTag, "SKIP", `count=${skippedConnections.length} ${formatSkippedConnections(skippedConnections)}`));
+    }
 
     if (availableConnections.length === 0) {
       // Find earliest lock expiry across all connections for retry timing
@@ -152,7 +218,7 @@ export async function getProviderCredentials(provider: string, excludeConnection
       const earliest = expiries.sort()[0] || null;
       if (earliest) {
         const earliestConn = lockedConns[0];
-        log.warn("AUTH", `[AUTH] ${authCtx} all-unavailable reason=model-locked retryAfter=${formatRetryAfter(earliest)} cooldownUntil=${earliest} sampleAccount=${formatAccountRef(earliestConn)}`);
+        log.warn("AUTH", formatAuthEvent(requestTag, "EXHAUSTED", `reason=model-locked retryAfter=${formatRetryAfter(earliest)} cooldownUntil=${earliest} sampleAccount=${formatAccountRef(earliestConn)}`));
         return {
           connectionName: "",
           allRateLimited: true,
@@ -162,7 +228,7 @@ export async function getProviderCredentials(provider: string, excludeConnection
           lastErrorCode: earliestConn?.errorCode || undefined
         };
       }
-      log.warn("AUTH", `[AUTH] ${authCtx} all-unavailable reason=excluded-or-inactive`);
+      log.warn("AUTH", formatAuthEvent(requestTag, "EXHAUSTED", `reason=excluded-or-inactive`));
       return null;
     }
 
@@ -194,7 +260,7 @@ export async function getProviderCredentials(provider: string, excludeConnection
       if (connection?.id) setSelectorMemory(fillFirstPreferredConnectionByContext, contextKey, connection.id);
     }
 
-    log.info("AUTH", `[AUTH] ${authCtx} selected account=${formatAccountRef(connection)} reason=${selectedReason}`);
+    log.info("AUTH", formatAuthEvent(requestTag, "SELECT", `account=${formatAccountRef(connection)} reason=${selectedReason}`));
 
     const resolvedProxy = await resolveConnectionProxyConfig(connection.providerSpecificData || {});
 
@@ -246,9 +312,11 @@ export async function markAccountUnavailable(
   if (!shouldFallback) return { shouldFallback: false, cooldownMs: 0 };
 
   let effectiveCooldownMs = cooldownMs;
+  let cooldownSource = "backoff";
   if (typeof resetsAtMs === "number" && Number.isFinite(resetsAtMs) && resetsAtMs > Date.now()) {
     const resetCooldownMs = Math.max(0, Math.floor(resetsAtMs - Date.now()));
     effectiveCooldownMs = Math.min(resetCooldownMs, BACKOFF_CONFIG.max);
+    cooldownSource = "retry-after";
   }
 
   const reason = typeof errorText === "string" ? errorText.slice(0, 100) : "Provider error";
@@ -269,7 +337,8 @@ export async function markAccountUnavailable(
   const settings = await getSettings();
   const providerOverride = (settings.providerStrategies || {})[providerId] || {};
   const authMode = providerOverride.fallbackStrategy || settings.comboStrategy || "fill-first";
-  log.warn("AUTH", `[AUTH] provider=${providerId} model=${model || "__all"} mode=${authMode} fallback account=${formatAccountRef(conn)} reason=http-${status} cooldownUntil=${formatCooldownUntil(cooldownUntil)} detail=${reason}`);
+  const requestTag = createRequestTag();
+  log.warn("AUTH", formatAuthEvent(requestTag, "LOCK", `provider=${providerId} model=${formatModelLabel(model)} mode=${authMode} account=${formatAccountRef(conn)} status=${status} lockKey=${lockKey} cooldownSource=${cooldownSource} cooldownUntil=${formatCooldownUntil(cooldownUntil)} backoffLevel=${newBackoffLevel ?? backoffLevel} detail=${formatErrorDetail(reason)}`));
 
   if (provider && status && reason) {
     console.error(`❌ ${provider} [${status}]: ${reason}`);
@@ -283,17 +352,17 @@ export async function markAccountUnavailable(
  */
 export async function clearAccountError(connectionId: string, currentConnection: any, model: string | null = null) {
   if (!connectionId || connectionId === "noauth") return;
-  const conn = currentConnection._connection || currentConnection;
+  const snapshotConn = currentConnection._connection || currentConnection;
+  const conn = await getProviderConnectionById(connectionId) || snapshotConn;
   const now = Date.now();
   const allLockKeys = Object.keys(conn).filter(k => k.startsWith("modelLock_"));
 
   if (!conn.testStatus && !conn.lastError && allLockKeys.length === 0) return;
 
-  // Keys to clear: current model's lock + all expired locks
+  // Keys to clear: expired locks only
   const keysToClear = allLockKeys.filter(k => {
-    if (model && k === `modelLock_${model}`) return true; // succeeded model
-    const expiry = conn[k];
-    return expiry && new Date(expiry).getTime() <= now;   // expired
+    const expiry = (conn as any)[k];
+    return expiry && new Date(expiry).getTime() <= now;
   });
 
   if (keysToClear.length === 0 && conn.testStatus !== "unavailable" && !conn.lastError) return;
@@ -301,7 +370,7 @@ export async function clearAccountError(connectionId: string, currentConnection:
   // Check if any active locks remain after clearing
   const remainingActiveLocks = allLockKeys.filter(k => {
     if (keysToClear.includes(k)) return false;
-    const expiry = conn[k];
+    const expiry = (conn as any)[k];
     return expiry && new Date(expiry).getTime() > now;
   });
 
@@ -312,15 +381,18 @@ export async function clearAccountError(connectionId: string, currentConnection:
     Object.assign(clearObj, { testStatus: "active", lastError: null, lastErrorAt: null, backoffLevel: 0 });
   }
 
+  if (Object.keys(clearObj).length === 0) return;
+
   await updateProviderConnection(connectionId, clearObj);
-  const providerId = resolveProviderId(conn?.provider || currentConnection?.provider || "unknown");
+  const providerId = resolveProviderId(conn?.provider || snapshotConn?.provider || currentConnection?.provider || "unknown");
   const settings = await getSettings();
   const providerOverride = (settings.providerStrategies || {})[providerId] || {};
   const authMode = providerOverride.fallbackStrategy || settings.comboStrategy || "fill-first";
-  const authCtx = formatAuthCtx(providerId, model, authMode);
   const contextKey = `${connectionId}::${model || "__all"}`;
   if (shouldEmitClearLog(contextKey)) {
-    log.info("AUTH", `[AUTH] ${authCtx} clear account=${formatAccountRef(conn)} cleared=${keysToClear.length} remainingActiveLocks=${remainingActiveLocks.length}`);
+    const requestTag = createRequestTag();
+    const clearedKeys = keysToClear.join(",") || "none";
+    log.info("AUTH", formatAuthEvent(requestTag, "CLEAR", `provider=${providerId} model=${formatModelLabel(model)} mode=${authMode} account=${formatAccountRef(conn)} cleared=${keysToClear.length} clearedKeys=${clearedKeys} remainingActiveLocks=${remainingActiveLocks.length}`));
   }
 }
 

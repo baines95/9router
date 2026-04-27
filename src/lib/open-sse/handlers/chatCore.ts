@@ -37,6 +37,7 @@ export interface ChatCoreResult {
   response?: Response;
   status?: number;
   error?: string;
+  resetsAtMs?: number;
 }
 
 /**
@@ -187,13 +188,13 @@ export async function handleChatCore(options: ChatCoreOptions): Promise<ChatCore
   }
 
   if (!providerResponse || !providerResponse.ok) {
-    const { statusCode, message } = providerResponse 
+    const { statusCode, message, resetsAtMs } = providerResponse
       ? await parseUpstreamError(providerResponse)
-      : { statusCode: HTTP_STATUS.BAD_GATEWAY, message: "No response from provider after retry" };
+      : { statusCode: HTTP_STATUS.BAD_GATEWAY, message: "No response from provider after retry", resetsAtMs: undefined };
     const errMsg = formatProviderError(new Error(message), provider, model, statusCode);
     trackPendingRequest(model, provider, connectionId || "", false, true);
     reqLogger.logError(new Error(message), translatedBody);
-    return createErrorResult(statusCode, errMsg);
+    return createErrorResult(statusCode, errMsg, resetsAtMs);
   }
 
   if (onRequestSuccess) await onRequestSuccess();

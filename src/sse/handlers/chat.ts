@@ -226,7 +226,7 @@ async function handleSingleModelChat(body: any, modelStr: string, clientRawReque
     if (result.success && result.response) return result.response;
 
     // Mark account unavailable (auto-calculates cooldown with exponential backoff)
-    const { shouldFallback } = await markAccountUnavailable(credentials.connectionId || "", result.status || 500, result.error || "", provider, model);
+    const { shouldFallback } = await markAccountUnavailable(credentials.connectionId || "", result.status || 500, result.error || "", provider, model, result.resetsAtMs ?? null);
 
     if (shouldFallback) {
       log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);

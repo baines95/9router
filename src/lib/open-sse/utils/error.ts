@@ -1,4 +1,5 @@
 import { ERROR_TYPES, DEFAULT_ERROR_MESSAGES } from "../config/errorConfig";
+import { formatRetryAfter } from "../services/accountFallback";
 
 interface ErrorResponse {
   error: {
@@ -51,9 +52,23 @@ export async function writeStreamError(writer: WritableStreamDefaultWriter, stat
 /**
  * Parse upstream provider error response
  */
-export async function parseUpstreamError(response: Response): Promise<{statusCode: number, message: string}> {
+export async function parseUpstreamError(response: Response): Promise<{statusCode: number, message: string, resetsAtMs?: number}> {
   let message: any = "";
   const status = response.status || 502;
+  let resetsAtMs: number | undefined;
+
+  const retryAfterHeader = response.headers.get("Retry-After");
+  if (retryAfterHeader) {
+    const retryAfterSeconds = Number(retryAfterHeader);
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      resetsAtMs = Date.now() + Math.floor(retryAfterSeconds * 1000);
+    } else {
+      const retryAfterDate = Date.parse(retryAfterHeader);
+      if (!Number.isNaN(retryAfterDate) && retryAfterDate > Date.now()) {
+        resetsAtMs = retryAfterDate;
+      }
+    }
+  }
 
   try {
     const text = await response.text();
@@ -73,7 +88,8 @@ export async function parseUpstreamError(response: Response): Promise<{statusCod
 
   return {
     statusCode: status,
-    message: finalMessage
+    message: finalMessage,
+    resetsAtMs
   };
 }
 
@@ -82,28 +98,33 @@ export interface ErrorResult {
   status: number;
   error: string;
   response: Response;
+  resetsAtMs?: number;
 }
 
 /**
  * Create error result for chatCore handler
  */
-export function createErrorResult(statusCode: number, message: string): ErrorResult {
+export function createErrorResult(statusCode: number, message: string, resetsAtMs?: number): ErrorResult {
   return {
     success: false,
     status: statusCode,
     error: message,
-    response: errorResponse(statusCode, message)
+    response: errorResponse(statusCode, message),
+    resetsAtMs
   };
 }
 
-/**
- * Create unavailable response when all accounts are rate limited
- */
-export function unavailableResponse(statusCode: number, message: string, retryAfter: string, retryAfterHuman: string): Response {
+export function unavailableResponse(statusCode: number, message: string, retryAfter: string, retryAfterHuman?: string): Response {
+  if (!retryAfter) {
+    return errorResponse(statusCode, message);
+  }
+
+  const human = retryAfterHuman || formatRetryAfter(retryAfter);
   const retryAfterSec = Math.max(Math.ceil((new Date(retryAfter).getTime() - Date.now()) / 1000), 1);
-  const msg = `${message} (${retryAfterHuman})`;
+  const msg = `${message} (${human})`;
+
   return new Response(
-    JSON.stringify({ error: { message: msg } }),
+    JSON.stringify(buildErrorBody(statusCode, msg)),
     {
       status: statusCode,
       headers: {
@@ -117,12 +138,12 @@ export function unavailableResponse(statusCode: number, message: string, retryAf
 /**
  * Format provider error with context
  */
-export function formatProviderError(error: any, provider: string, model: string, statusCode?: number | string): string {
-  const code = statusCode || error.code || "FETCH_FAILED";
-  const message = error.message || "Unknown error";
-  // Expose low-level cause (e.g. UND_ERR_SOCKET, ECONNRESET, ETIMEDOUT) for diagnosing fetch failures
+export function formatProviderError(error: any, provider: string, model: string, statusCode: number): string {
+  const code = statusCode || error?.status || error?.code || "ERR";
+  const message = error?.message || `${provider}/${model} request failed`;
   const causeCode = error.cause?.code;
   const causeMsg = error.cause?.message;
   const causeStr = causeCode || causeMsg ? ` (cause: ${[causeCode, causeMsg].filter(Boolean).join(": ")})` : "";
   return `[${code}]: ${message}${causeStr}`;
 }
+

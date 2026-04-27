@@ -85,14 +85,16 @@ function getLocalDateKey(timestamp?: string | number) {
 }
 
 function addToCounter(target: Record<string, UsageCounter>, key: string, values: { requests?: number; promptTokens?: number; completionTokens?: number; cost?: number; inputCost?: number; outputCost?: number; meta?: any }) {
-  if (!target[key]) target[key] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, inputCost: 0, outputCost: 0 };
-  target[key].requests += values.requests || 1;
-  target[key].promptTokens += values.promptTokens || 0;
-  target[key].completionTokens += values.completionTokens || 0;
-  target[key].cost += values.cost || 0;
-  target[key].inputCost += values.inputCost || 0;
-  target[key].outputCost += values.outputCost || 0;
-  if (values.meta) Object.assign(target[key], values.meta);
+  const counter = target[key] || (target[key] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, inputCost: 0, outputCost: 0 });
+  counter.inputCost ??= 0;
+  counter.outputCost ??= 0;
+  counter.requests += values.requests || 1;
+  counter.promptTokens += values.promptTokens || 0;
+  counter.completionTokens += values.completionTokens || 0;
+  counter.cost += values.cost || 0;
+  counter.inputCost += values.inputCost || 0;
+  counter.outputCost += values.outputCost || 0;
+  if (values.meta) Object.assign(counter, values.meta);
 }
 
 function aggregateEntryToDailySummary(dailySummary: Record<string, DaySummary>, entry: UsageEntry) {
