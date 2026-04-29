@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import ProviderIcon from "@/shared/components/ProviderIcon";
+import { Command } from "@phosphor-icons/react";
 
 const CLI_TOOLS = [
   { id: "claude", name: "Claude Code", image: "/providers/claude.png" },
@@ -50,9 +51,7 @@ export default function FlowAnimation() {
     <div className="mt-16 w-full max-w-4xl relative h-[360px] hidden md:flex items-center justify-center animate-[float_6s_ease-in-out_infinite]">
       {/* 8Router Hub - Center */}
       <div className="relative z-20 w-32 h-32 rounded-full bg-card border-2 border-primary flex flex-col items-center justify-center gap-1 group cursor-pointer hover:scale-105 transition-transform duration-500">
-        <span className="material-symbols-outlined text-4xl text-primary">
-          hub
-        </span>
+        <Command className="text-4xl text-primary" weight="bold" />
         <span className="text-xs font-semibold text-foreground tracking-tight uppercase">
           8Router
         </span>

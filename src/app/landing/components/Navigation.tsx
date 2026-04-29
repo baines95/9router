@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { Command } from "@phosphor-icons/react";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,7 +19,7 @@ export default function Navigation() {
           aria-label="Navigate to home"
         >
           <div className="size-8 rounded bg-primary flex items-center justify-center text-primary-foreground">
-            <span className="material-symbols-outlined text-[20px]">hub</span>
+            <Command className="size-5" weight="bold" />
           </div>
           <h2 className="text-foreground text-xl font-semibold tracking-tight">8Router</h2>
         </button>

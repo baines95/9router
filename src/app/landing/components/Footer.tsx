@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { Command } from "@phosphor-icons/react";
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
               <div className="size-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
-                <span className="material-symbols-outlined text-[16px]">hub</span>
+                <Command className="size-4" weight="bold" />
               </div>
               <h3 className="text-foreground text-lg font-semibold">8Router</h3>
             </div>

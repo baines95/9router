@@ -32,7 +32,7 @@ export default function HowItWorks() {
           {/* Step 2: 8Router Hub */}
           <div className="flex flex-col gap-6 relative group md:items-center md:text-center">
             <div className="w-24 h-24 bg-card border-2 border-primary flex items-center justify-center z-10 mx-auto">
-              <span className="material-symbols-outlined text-4xl text-primary animate-pulse">hub</span>
+              <Command className="size-10 text-primary animate-pulse" weight="bold" />
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2 text-primary">2. 8Router Hub</h3>
@@ -58,6 +58,12 @@ export default function HowItWorks() {
                 The request is fulfilled by OpenAI, Anthropic, Gemini, or others instantly.
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
           </div>
         </div>
       </div>
