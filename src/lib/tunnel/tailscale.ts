@@ -22,7 +22,10 @@ const WINDOWS_TAILSCALE_BIN = "C:\\Program Files\\Tailscale\\tailscale.exe";
 // Prefer system tailscale, fallback to local bin, then Windows default path
 function getTailscaleBin(): string | null {
   try {
-    const systemPath = execSync("which tailscale 2>/dev/null || where tailscale 2>nul", { encoding: "utf8", windowsHide: true }).trim();
+    const findCmd = IS_WINDOWS
+      ? "where tailscale 2>nul"
+      : "which tailscale 2>/dev/null";
+    const systemPath = execSync(findCmd, { encoding: "utf8", windowsHide: true }).trim();
     if (systemPath) return systemPath;
   } catch (e) { /* not in PATH */ }
   if (fs.existsSync(TAILSCALE_BIN)) return TAILSCALE_BIN;
